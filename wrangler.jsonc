@@ -18,7 +18,7 @@
     {
       "binding": "DB",
       "database_name": "ispolandsafenow-db",
-      "database_id": "local-dev-placeholder",
+      "database_id": "e5ab6184-ce68-4a94-bccc-0d2487a70b1c",
       "migrations_dir": "migrations"
     }
   ],
