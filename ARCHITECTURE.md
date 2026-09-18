@@ -5,11 +5,14 @@
 This is the foundation and first vertical slice of *Is Poland Safe Now?*:
 project scaffolding, Cloudflare configuration, Docker-based local
 development, a D1 database foundation, the interactive Poland map, a
-homepage backed by live TypeSafe AI classifications, a basic public status
-API, and tests/documentation. `TypeSafeAiClassificationService` calls
-TypeSafe AI's System One API directly with the model's own knowledge —
-there is still no news-collection pipeline, scheduled classification, or
-production deployment; those are designed for (see below) but not built.
+homepage backed by live, news-grounded TypeSafe AI classifications, a
+basic public status API, and tests/documentation.
+`TypeSafeAiClassificationService` collects recent headlines
+(`src/domain/news-collection.ts`) and sends them to TypeSafe AI's System
+One API as evidence — but that collection is ad hoc per-request, not
+persisted or scheduled; a stored evidence trail, scheduled
+re-classification, and production deployment are designed for (see
+below) but not built.
 
 ## Why Astro
 
@@ -79,14 +82,17 @@ region *identity* (code, slug, names — always real) with whatever
 `ClassificationService` is wired in. Swapping that one class is the entire
 migration path to a different classifier — no caller changes.
 
-Each request calls TypeSafe AI's System One API once, asking it to
-classify all 16 regions from its own knowledge — there is no stored,
-citable evidence trail yet (see `scheduler/README.md`). If the
-`TYPESAFE_AI_API_KEY` binding is missing, the request fails, or the
-response is unusable, affected regions resolve to `UNKNOWN` rather than a
-guessed value; the D1 `regions` table itself always starts every region at
-`UNKNOWN` with no classification timestamp until a real classification
-succeeds. Every page and API response is stamped `"mode": "live"`.
+Each request collects recent headlines (`collectRecentNews`, Google News
+RSS across a fixed set of topics) and calls TypeSafe AI's System One API
+once with that evidence, asking it to classify all 16 regions. A short
+in-isolate cache (10 minutes) avoids repeating both on every page load.
+None of this is stored — there is no citable evidence trail in the
+database yet (see `scheduler/README.md`). If the `TYPESAFE_AI_API_KEY`
+binding is missing, the request fails, or the response is unusable,
+affected regions resolve to `UNKNOWN` rather than a guessed value; the D1
+`regions` table itself always starts every region at `UNKNOWN` with no
+classification timestamp until a real classification succeeds. Every
+page and API response is stamped `"mode": "live"`.
 
 ## The Cloudflare build/dev model (a note on `wrangler.jsonc`)
 
@@ -108,11 +114,11 @@ since D1 migrations don't need a built Worker.
 
 ## Deliberately deferred (interfaces exist, implementations don't)
 
-- **News collection**: no code yet. The `job_runs` and
-  `classification_evidence` tables exist so it can start writing
-  immediately once built. `TypeSafeAiClassificationService` calls TypeSafe
-  AI directly over HTTP (`fetch`, no SDK) with the model's own knowledge
-  instead of collected evidence.
+- **Persisted news collection**: `src/domain/news-collection.ts` collects
+  headlines ad hoc, per request — nothing is written to the `job_runs` or
+  `classification_evidence` tables, which exist so a persisted version
+  can start writing immediately once built. `TypeSafeAiClassificationService`
+  calls TypeSafe AI directly over HTTP (`fetch`, no SDK).
 - **Scheduled jobs**: `scheduler/README.md` documents the intended design
   (a Cron Trigger calling the classification service and writing to D1);
   nothing is deployed.

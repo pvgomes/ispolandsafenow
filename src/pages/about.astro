@@ -24,8 +24,9 @@ import SiteFooter from "../components/SiteFooter.astro";
       emergencies, call 112.
     </p>
     <p>
-      Regional statuses are classified live by TypeSafe AI. There is no dedicated news-collection pipeline yet, so
-      classifications reflect the model's own knowledge rather than a stored, citable evidence trail — see the
+      Regional statuses are classified live: recent headlines are collected from Polish and international news
+      portals, then sent to TypeSafe AI to classify each voivodeship from that evidence. Collection runs fresh on
+      each request rather than on a persisted schedule — see the
       <a class="underline" href="/methodology">methodology page</a> for details and current limits.
     </p>
   </main>

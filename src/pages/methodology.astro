@@ -14,14 +14,15 @@ import SiteFooter from "../components/SiteFooter.astro";
     <h1 class="text-3xl font-bold text-slate-900">Methodology</h1>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Current phase: live, AI-assisted classification</h2>
+      <h2 class="text-xl font-semibold text-slate-900">Current phase: live, news-grounded classification</h2>
       <p class="mt-2">
-        Every region's status is produced by <code>TypeSafeAiClassificationService</code>, which calls TypeSafe
-        AI's System One API once per request to classify each of the 16 voivodeships. There is no dedicated
-        news-collection pipeline yet (see <a class="underline" href="/about">About</a>), so classifications reflect
-        the model's own knowledge as of the request rather than a stored, citable evidence trail. If the TypeSafe
-        AI call is unavailable, misconfigured, or returns something unusable, affected regions show
-        <strong>Unknown</strong> — never a false Green.
+        Every region's status is produced by <code>TypeSafeAiClassificationService</code>, which first collects
+        recent headlines from Polish and international news portals (covering roughly the last 48 hours), then
+        sends them to TypeSafe AI's System One API to classify each of the 16 voivodeships from that evidence. The
+        collection itself is not persisted or scheduled yet (see <a class="underline" href="/about">About</a>) — it
+        runs fresh on each request, cached briefly to avoid refetching on every page load. If a region has no
+        relevant headline, or the TypeSafe AI call is unavailable, misconfigured, or returns something unusable,
+        that region shows <strong>Unknown</strong> — never a false Green.
       </p>
     </section>
 
@@ -41,12 +42,10 @@ import SiteFooter from "../components/SiteFooter.astro";
     <section>
       <h2 class="text-xl font-semibold text-slate-900">Planned pipeline (not yet implemented)</h2>
       <p class="mt-2">
-        A future phase will collect news from public sources relevant to Poland's security situation (the
-        Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile incidents,
-        RCB warnings, and transport disruptions) and pass that evidence to TypeSafe AI alongside each question, so
-        classifications are backed by citable sources rather than the model's own knowledge alone. Classifications
-        will also run on a schedule and be stored with full evidence trails in the database, following the same
-        <code>ClassificationService</code> interface this phase already defines.
+        A future phase will persist collected news and classifications to the database with full evidence trails,
+        re-run on a schedule via a Cron Trigger instead of on-demand per request, and broaden collection beyond
+        RSS search queries — following the same <code>ClassificationService</code> interface this phase already
+        defines.
       </p>
     </section>
 

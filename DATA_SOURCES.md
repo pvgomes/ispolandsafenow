@@ -55,7 +55,8 @@ constant, and the D1 seed migration — which
 
 Alert-level classifications come from TypeSafe AI's System One API,
 called by `TypeSafeAiClassificationService`
-(`src/domain/typesafe-ai-classification-service.ts`). There is no
-news-collection pipeline yet, so classifications reflect the model's own
-knowledge rather than a stored, citable source — see `METHODOLOGY.md` for
-how it's used and its current limits.
+(`src/domain/typesafe-ai-classification-service.ts`), using headlines
+collected on demand from Google News RSS (`src/domain/news-collection.ts`)
+— mostly Polish portals, plus some international outlets — as evidence.
+Collection is ad hoc per request, not a stored, citable source: see
+`METHODOLOGY.md` for how it's used and its current limits.
