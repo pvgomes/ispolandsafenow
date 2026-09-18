@@ -5,10 +5,11 @@
 This is the foundation and first vertical slice of *Is Poland Safe Now?*:
 project scaffolding, Cloudflare configuration, Docker-based local
 development, a D1 database foundation, the interactive Poland map, a
-homepage rendered from clearly labelled demonstration data, a basic public
-status API, and tests/documentation. It deliberately does **not** implement
-live news collection, TypeSafe AI calls, scheduled classification, or
-production deployment — those are designed for (see below) but not built.
+homepage backed by live TypeSafe AI classifications, a basic public status
+API, and tests/documentation. `TypeSafeAiClassificationService` calls
+TypeSafe AI's System One API directly with the model's own knowledge —
+there is still no news-collection pipeline, scheduled classification, or
+production deployment; those are designed for (see below) but not built.
 
 ## Why Astro
 
@@ -52,12 +53,10 @@ second `wrangler.jsonc`, and no deployed job. The single Astro app:
 ```
 src/
   domain/         Pure business rules: AlertLevel, Region, national summary,
-                   the ClassificationService interface, the demo
-                   implementation, missing-data-resolves-to-UNKNOWN logic.
-                   No Astro or Cloudflare imports.
-  data/            Static reference data: the 16 REGIONS, and the
-                   demonstration classification fixture (isolated so it can
-                   be deleted cleanly once a real pipeline exists).
+                   the ClassificationService interface, the live TypeSafe
+                   AI-backed implementation, missing-data-resolves-to-UNKNOWN
+                   logic. No Astro imports (it does call `fetch`).
+  data/            Static reference data: the 16 REGIONS.
   repositories/    D1 access, prepared statements only.
   services/        Orchestrates repositories + the ClassificationService.
   components/      Astro components (server-rendered) and one React island
@@ -71,22 +70,23 @@ Domain code has zero framework dependencies, so it's unit-testable in
 plain Vitest and will not need to change when D1 rows start holding real
 classifications instead of demo ones.
 
-## Demo data, and how it disappears later
+## Live classification, and its current limits
 
-`src/data/demo-classifications.ts` is a fixed fixture consumed by
-`DemoClassificationService` (`src/domain/demo-classification-service.ts`),
-the only implementation of the `ClassificationService` interface today.
+`TypeSafeAiClassificationService` (`src/domain/typesafe-ai-classification-service.ts`)
+is the only implementation of the `ClassificationService` interface today.
 Pages and API routes call `RegionStatusService`, which combines D1-sourced
 region *identity* (code, slug, names — always real) with whatever
-`ClassificationService` is wired in (today: demo; later: a TypeSafe
-AI-backed implementation). Swapping that one class is the entire migration
-path off demo data — no caller changes.
+`ClassificationService` is wired in. Swapping that one class is the entire
+migration path to a different classifier — no caller changes.
 
-The D1 `regions` table itself always starts every region at `UNKNOWN` with
-no classification timestamp, because no real classification has ever run.
-The demo status shown on the site comes from the fixture layered on top,
-which is why every page and API response is stamped `"mode":
-"demonstration"`.
+Each request calls TypeSafe AI's System One API once, asking it to
+classify all 16 regions from its own knowledge — there is no stored,
+citable evidence trail yet (see `scheduler/README.md`). If the
+`TYPESAFE_AI_API_KEY` binding is missing, the request fails, or the
+response is unusable, affected regions resolve to `UNKNOWN` rather than a
+guessed value; the D1 `regions` table itself always starts every region at
+`UNKNOWN` with no classification timestamp until a real classification
+succeeds. Every page and API response is stamped `"mode": "live"`.
 
 ## The Cloudflare build/dev model (a note on `wrangler.jsonc`)
 
@@ -110,11 +110,9 @@ since D1 migrations don't need a built Worker.
 
 - **News collection**: no code yet. The `job_runs` and
   `classification_evidence` tables exist so it can start writing
-  immediately once built.
-- **TypeSafe AI classification**: `ClassificationService` is the boundary;
-  `@typesafe-ai/sdk` is not installed and no network call is made anywhere
-  in this codebase (checked by
-  `tests/unit/no-secrets-in-client-code.test.ts`).
+  immediately once built. `TypeSafeAiClassificationService` calls TypeSafe
+  AI directly over HTTP (`fetch`, no SDK) with the model's own knowledge
+  instead of collected evidence.
 - **Scheduled jobs**: `scheduler/README.md` documents the intended design
   (a Cron Trigger calling the classification service and writing to D1);
   nothing is deployed.

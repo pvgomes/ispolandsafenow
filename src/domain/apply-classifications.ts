@@ -3,9 +3,8 @@ import type { RegionIdentity, RegionWithStatus } from "./region";
 
 /**
  * Combines region identity data with classification results into the
- * shape shown on the map, region pages, and API. Used both for demo mode
- * (classifications from `DemoClassificationService`) and, unchanged, once
- * a real `ClassificationService` is wired in.
+ * shape shown on the map, region pages, and API. Works with any
+ * `ClassificationService` implementation unchanged.
  *
  * A region with no matching classification resolves to UNKNOWN — missing
  * data must never resolve to GREEN.

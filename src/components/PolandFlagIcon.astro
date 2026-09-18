@@ -1,0 +1,13 @@
+---
+export interface Props {
+  class?: string;
+}
+
+const { class: className = "h-6 w-8" } = Astro.props;
+---
+
+<svg viewBox="0 0 32 32" class={className} role="img" aria-label="Flag of Poland">
+  <rect width="32" height="16" y="0" fill="#ffffff" />
+  <rect width="32" height="16" y="16" fill="#dc143c" />
+  <rect width="32" height="32" fill="none" stroke="#cbd5e1" stroke-width="1" />
+</svg>

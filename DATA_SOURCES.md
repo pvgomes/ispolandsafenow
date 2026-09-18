@@ -51,7 +51,11 @@ in sync across three places — the SVG map, the `REGIONS` TypeScript
 constant, and the D1 seed migration — which
 `tests/unit/region-consistency.test.ts` checks automatically.
 
-## Demonstration classification data (`src/data/demo-classifications.ts`)
+## Regional classifications (live)
 
-Entirely hand-authored for this phase. Not derived from any real report,
-sensor, or feed. See `METHODOLOGY.md` for how it's used and its limits.
+Alert-level classifications come from TypeSafe AI's System One API,
+called by `TypeSafeAiClassificationService`
+(`src/domain/typesafe-ai-classification-service.ts`). There is no
+news-collection pipeline yet, so classifications reflect the model's own
+knowledge rather than a stored, citable source — see `METHODOLOGY.md` for
+how it's used and its current limits.

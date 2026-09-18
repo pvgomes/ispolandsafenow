@@ -1,9 +1,9 @@
 /**
- * Data mode for the whole site. This phase only ever runs in
- * "demonstration" mode: there is no news collection or classification
- * pipeline yet, so every status shown comes from the fixed demo fixture.
- * A future "live" mode will be introduced alongside the real pipeline.
+ * Data mode for the whole site. "live" means classifications come from
+ * `TypeSafeAiClassificationService` (TypeSafe AI's System One API);
+ * regions resolve to UNKNOWN wherever that call is unconfigured, fails,
+ * or returns nothing usable — never to a fixed demo fixture.
  */
 export type AppMode = "demonstration" | "live";
 
-export const APP_MODE: AppMode = "demonstration";
+export const APP_MODE: AppMode = "live";

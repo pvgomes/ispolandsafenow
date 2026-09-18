@@ -34,10 +34,11 @@ export interface ClassificationInput {
 /**
  * Boundary between the app and whatever produces regional classifications.
  *
- * This phase ships only `DemoClassificationService`. The production
- * implementation will call the TypeSafe AI SDK (`@typesafe-ai/sdk`, not
- * installed yet) with collected news evidence and return real
- * classifications through this same interface — no caller changes needed.
+ * `TypeSafeAiClassificationService` (`./typesafe-ai-classification-service`)
+ * is the live implementation: it calls TypeSafe AI's System One API
+ * directly. There is no news-collection pipeline yet, so classifications
+ * are based on the model's own knowledge rather than a stored evidence
+ * trail — see that file's doc comment for the current limits.
  */
 export interface ClassificationService {
   classifyRegions(input: ClassificationInput): Promise<RegionClassification[]>;

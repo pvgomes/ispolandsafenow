@@ -2,7 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SiteHeader from "../../components/SiteHeader.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
-import DemoBanner from "../../components/DemoBanner.astro";
 import DisclaimerNotice from "../../components/DisclaimerNotice.astro";
 import { ALERT_LEVEL_PRESENTATION } from "../../domain/alert-level";
 import { RegionRepository } from "../../repositories/region-repository";
@@ -25,7 +24,7 @@ const pageTitle = region
   : "Region not found — Is Poland Safe Now?";
 const pageDescription =
   region && presentation
-    ? `Demonstration-stage security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships: ${presentation.label} — ${presentation.description}`
+    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships: ${presentation.label} — ${presentation.description}`
     : "This voivodeship could not be found.";
 
 const placeJsonLd = region
@@ -62,7 +61,6 @@ const placeJsonLd = region
       </main>
     ) : (
       <>
-        <DemoBanner />
         <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
           <div>
             <h1 class="text-3xl font-bold text-slate-900">{region.namePl}</h1>

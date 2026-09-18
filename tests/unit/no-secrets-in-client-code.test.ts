@@ -29,14 +29,3 @@ describe("client-hydrated components never reference secrets", () => {
     }
   });
 });
-
-describe("the demo classification fixture never calls TypeSafe AI or any network API", () => {
-  it("DemoClassificationService source has no fetch/network calls", () => {
-    const source = readFileSync(
-      path.resolve(__dirname, "../../src/domain/demo-classification-service.ts"),
-      "utf-8",
-    );
-    expect(source).not.toMatch(/fetch\(/);
-    expect(source).not.toMatch(/^\s*import .*@typesafe-ai/m);
-  });
-});

@@ -24,27 +24,26 @@ data always resolves to `UNKNOWN`, never `GREEN`. See
 classification at all resolves to `UNKNOWN`). All three are covered by
 tests in `tests/unit/`.
 
-## Current phase: demonstration data only
+## Current phase: live, AI-assisted classification
 
-Every status shown on the site right now comes from
-`src/data/demo-classifications.ts`, a fixed, hand-authored fixture — not
-from any real report, sensor, or feed. The pattern is deliberately
-geographic and deterministic for demo purposes:
+Every status shown on the site comes from `TypeSafeAiClassificationService`
+(`src/domain/typesafe-ai-classification-service.ts`), which calls TypeSafe
+AI's System One API (`POST https://api.typesafe.ai/v1/systemone`, model
+`jev-latest`) once per request. It asks one "choice" question per region
+(GREEN / YELLOW / RED), based on the model's own knowledge of publicly
+reported developments connected to the Russia-Ukraine war, Belarus border
+activity, Kaliningrad, airspace violations, drone/missile incidents, RCB
+warnings, and border/airport/transport disruptions.
 
-- western regions (Zachodniopomorskie, Lubuskie, Dolnośląskie,
-  Wielkopolskie, Opolskie) → GREEN,
-- central regions (Pomorskie, Kujawsko-Pomorskie, Łódzkie, Śląskie,
-  Małopolskie, Mazowieckie) → YELLOW,
-- Świętokrzyskie → UNKNOWN (demonstrating the missing/insufficient-data
-  case),
-- eastern border regions (Warmińsko-Mazurskie, Podlaskie, Lubelskie,
-  Podkarpackie) → RED.
-
-This is **visual demo data only**. It is labelled as such everywhere it
-appears: a banner on every page ("Demonstration data only. Live automated
-classifications are not enabled yet."), and an explicit `"mode":
-"demonstration"` field on every API response. `tests/unit/api-*.test.ts`
-and the DOM test suite check that this labelling is present.
+There is **no news-collection pipeline yet** (see "Planned pipeline"
+below), so classifications are not backed by a stored, citable evidence
+trail — `evidence` is always empty. If `TYPESAFE_AI_API_KEY` is missing,
+the request fails, or the response is unusable, affected regions resolve
+to `UNKNOWN` rather than a guessed value. Every API response carries
+`"mode": "live"`. `tests/unit/api-*.test.ts` check this, and
+`tests/unit/typesafe-ai-classification-service.test.ts` checks the
+request/response handling (including the no-API-key and failure paths)
+against a mocked `fetch` — no test makes a real network call.
 
 ## The classification boundary
 
@@ -54,12 +53,12 @@ interface ClassificationService {
 }
 ```
 
-`DemoClassificationService` (the only implementation shipped in this
-phase) returns the fixture above. `RegionStatusService`
-(`src/services/region-status-service.ts`) is the only code that
-instantiates a `ClassificationService`; every page and API route goes
-through it. A future TypeSafe AI-backed implementation satisfies the same
-interface, so adopting it is a one-class swap, not a rewrite.
+`TypeSafeAiClassificationService` is the only implementation shipped
+today. `RegionStatusService` (`src/services/region-status-service.ts`) is
+the only code that instantiates a `ClassificationService`; every page and
+API route goes through it. A future news-collection-backed implementation
+(or a swap to a different provider) satisfies the same interface, so
+adopting it is a one-class swap, not a rewrite.
 
 ## Planned pipeline (not implemented)
 
@@ -67,15 +66,16 @@ interface, so adopting it is a one-class swap, not a rewrite.
    (the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace
    violations, drone/missile incidents, RCB warnings, border/airport/
    transport disruptions).
-2. Send that evidence to TypeSafe AI (`@typesafe-ai/sdk`, not installed)
-   for region-by-region classification.
+2. Pass that evidence to TypeSafe AI alongside each region's question, so
+   classifications are backed by citable sources instead of the model's
+   own knowledge alone.
 3. Persist results to `region_classifications` and
    `classification_evidence`, and update `regions.current_status` /
    `last_classified_at` / `status_expires_at`.
-4. Re-run on a schedule (see `scheduler/README.md`).
+4. Re-run on a schedule (see `scheduler/README.md`), instead of once per
+   request.
 
-No code for steps 1–4 exists yet, and no network call to any AI service
-is made anywhere in this codebase.
+No code for steps 1–4 exists yet.
 
 ## Limits
 

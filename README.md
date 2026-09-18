@@ -1,11 +1,10 @@
 # Is Poland Safe Now?
 
-An independent, demonstration-stage information service tracking
-publicly reported security-alert exposure across Poland's 16
-voivodeships — covering developments connected to the Russia-Ukraine war,
-Belarus border activity, Kaliningrad, airspace violations, drone or
-missile incidents, RCB warnings, and border, airport, or transport
-disruptions.
+An independent information service tracking publicly reported
+security-alert exposure across Poland's 16 voivodeships — covering
+developments connected to the Russia-Ukraine war, Belarus border
+activity, Kaliningrad, airspace violations, drone or missile incidents,
+RCB warnings, and border, airport, or transport disruptions.
 
 **This is not an official warning system.** For emergencies, call 112.
 Always follow instructions from Polish authorities and RCB.
@@ -14,11 +13,13 @@ Always follow instructions from Polish authorities and RCB.
 
 This build ships the project foundation and a first vertical slice:
 project scaffolding, Cloudflare configuration, Docker-based local
-development, a D1 database foundation, the exact interactive Poland map,
-a homepage using clearly labelled **demonstration data**, a public status
-API, and tests/documentation. Live news collection, TypeSafe AI calls,
-scheduled classification, and production deployment are designed for but
-not implemented — see `ARCHITECTURE.md` and `METHODOLOGY.md`.
+development, a D1 database foundation, the interactive Poland map, and a
+homepage classified **live by TypeSafe AI** (`TYPESAFE_AI_API_KEY`), plus
+a public status API and tests/documentation. There is no news-collection
+pipeline yet, so classifications reflect the model's own knowledge rather
+than a stored evidence trail; scheduled classification and production
+deployment are designed for but not implemented — see `ARCHITECTURE.md`
+and `METHODOLOGY.md`.
 
 ## Stack
 
@@ -78,9 +79,9 @@ proxy), though the canonical, Workers-accurate path is the one above.
 ```
 src/
   domain/         Pure business rules (AlertLevel, Region, national
-                   summary, the ClassificationService interface + demo
-                   implementation). No framework imports.
-  data/           The 16 REGIONS + the demo classification fixture.
+                   summary, the ClassificationService interface + the live
+                   TypeSafe AI-backed implementation). No framework imports.
+  data/           The 16 REGIONS.
   repositories/   D1 access via prepared statements. No ORM.
   services/       Combines repositories with a ClassificationService.
   components/     Astro components + the one React island (PolandMap.tsx).
@@ -102,7 +103,7 @@ docker/           Compose entrypoint script.
 `/sitemap-index.xml`.
 
 Region pages render meaningful, complete HTML with no JavaScript required.
-API responses always include `"mode": "demonstration"` in this phase.
+API responses always include `"mode": "live"`.
 
 ## Testing
 
@@ -127,6 +128,6 @@ runs.
   Cloudflare build/dev model.
 - `DATA_SOURCES.md` — the map's geodata source and license, and how the
   committed SVG was produced.
-- `METHODOLOGY.md` — status levels, the demo-data pattern and its limits,
-  the planned pipeline.
+- `METHODOLOGY.md` — status levels, how live TypeSafe AI classification
+  works today and its limits, the planned pipeline.
 - `DEPLOYMENT.md` — what production deployment will need (not yet done).

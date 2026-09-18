@@ -45,10 +45,11 @@ preparation, not an executed action.
    domain, or DNS record has been configured. That's a Cloudflare dashboard
    (or `wrangler.jsonc` `routes`) step for whoever owns the zone.
 
-6. **Secrets**, once the TypeSafe AI integration exists: `npx wrangler
-   secret put TYPESAFE_AI_API_KEY` (or equivalent) rather than committing
-   it to `.dev.vars` or `wrangler.jsonc`. Nothing reads a secret in this
-   phase, so there is nothing to configure yet.
+6. **Secrets:** `npx wrangler secret put TYPESAFE_AI_API_KEY` rather than
+   committing it to `.dev.vars` or `wrangler.jsonc`. `RegionStatusService`
+   reads this at request time (via `TypeSafeAiClassificationService`); if
+   it's unset in production, every region resolves to `UNKNOWN` instead of
+   a guessed value.
 
 ## Local vs. remote D1
 

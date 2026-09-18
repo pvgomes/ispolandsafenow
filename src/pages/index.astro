@@ -2,7 +2,6 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
-import DemoBanner from "../components/DemoBanner.astro";
 import NationalStatusCard from "../components/NationalStatusCard.astro";
 import Legend from "../components/Legend.astro";
 import PlaceholderSection from "../components/PlaceholderSection.astro";
@@ -26,9 +25,9 @@ const lastUpdated = new Date().toISOString();
 const datasetJsonLd = {
   "@context": "https://schema.org",
   "@type": "Dataset",
-  name: "Is Poland Safe Now? — regional status (demonstration data)",
+  name: "Is Poland Safe Now? — regional status",
   description:
-    "Demonstration-only regional alert levels for the 16 Polish voivodeships. Not derived from real reports.",
+    "AI-assisted regional alert levels for the 16 Polish voivodeships, classified by TypeSafe AI. Independent information service, not an official warning system.",
   license: "https://ispolandsafenow.com/methodology",
   spatialCoverage: {
     "@type": "Place",
@@ -40,12 +39,11 @@ const datasetJsonLd = {
 
 <BaseLayout
   title="Is Poland Safe Now? — Regional security-alert overview"
-  description="An independent, demonstration-stage overview of security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, and airspace incidents."
+  description="An independent, AI-assisted overview of security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, and airspace incidents."
   path="/"
   structuredData={[datasetJsonLd]}
 >
   <SiteHeader />
-  <DemoBanner />
 
   <main id="main-content" class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
     <section>

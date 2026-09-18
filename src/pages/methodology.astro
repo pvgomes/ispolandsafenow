@@ -2,25 +2,26 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
-import DemoBanner from "../components/DemoBanner.astro";
 ---
 
 <BaseLayout
   title="Methodology — Is Poland Safe Now?"
-  description="How Is Poland Safe Now? classifies regional security status: current demonstration-data phase and the planned news-collection and AI-assisted classification pipeline."
+  description="How Is Poland Safe Now? classifies regional security status using TypeSafe AI, and the limits of the current pipeline."
   path="/methodology"
 >
   <SiteHeader />
-  <DemoBanner />
   <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 text-slate-700">
     <h1 class="text-3xl font-bold text-slate-900">Methodology</h1>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Current phase: demonstration data</h2>
+      <h2 class="text-xl font-semibold text-slate-900">Current phase: live, AI-assisted classification</h2>
       <p class="mt-2">
-        This build ships only the site foundation: the interactive map, homepage, region pages, and a public API,
-        all backed by fixed demonstration classifications. No news collection or AI classification runs yet. Every
-        status shown is a hand-authored example value, clearly labeled as demonstration data throughout the site.
+        Every region's status is produced by <code>TypeSafeAiClassificationService</code>, which calls TypeSafe
+        AI's System One API once per request to classify each of the 16 voivodeships. There is no dedicated
+        news-collection pipeline yet (see <a class="underline" href="/about">About</a>), so classifications reflect
+        the model's own knowledge as of the request rather than a stored, citable evidence trail. If the TypeSafe
+        AI call is unavailable, misconfigured, or returns something unusable, affected regions show
+        <strong>Unknown</strong> — never a false Green.
       </p>
     </section>
 
@@ -40,12 +41,12 @@ import DemoBanner from "../components/DemoBanner.astro";
     <section>
       <h2 class="text-xl font-semibold text-slate-900">Planned pipeline (not yet implemented)</h2>
       <p class="mt-2">
-        The production system will later collect news from public sources relevant to Poland's security situation
-        (the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile
-        incidents, RCB warnings, and transport disruptions), and send that evidence to TypeSafe AI for
-        region-by-region classification. Classifications will be re-run on a schedule and stored with full
-        evidence trails in the database, following the same <code>ClassificationService</code> interface this phase
-        already defines.
+        A future phase will collect news from public sources relevant to Poland's security situation (the
+        Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile incidents,
+        RCB warnings, and transport disruptions) and pass that evidence to TypeSafe AI alongside each question, so
+        classifications are backed by citable sources rather than the model's own knowledge alone. Classifications
+        will also run on a schedule and be stored with full evidence trails in the database, following the same
+        <code>ClassificationService</code> interface this phase already defines.
       </p>
     </section>
 
