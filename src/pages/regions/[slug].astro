@@ -2,7 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SiteHeader from "../../components/SiteHeader.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
-import DisclaimerNotice from "../../components/DisclaimerNotice.astro";
 import { ALERT_LEVEL_PRESENTATION } from "../../domain/alert-level";
 import { RegionRepository } from "../../repositories/region-repository";
 import { RegionStatusService } from "../../services/region-status-service";
@@ -95,8 +94,6 @@ const placeJsonLd = region
               &larr; Back to the full map
             </a>
           </p>
-
-          <DisclaimerNotice />
         </main>
       </>
     )

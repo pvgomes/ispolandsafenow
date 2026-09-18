@@ -6,7 +6,6 @@ import NationalStatusCard from "../components/NationalStatusCard.astro";
 import Legend from "../components/Legend.astro";
 import PlaceholderSection from "../components/PlaceholderSection.astro";
 import EmergencyGuidance from "../components/EmergencyGuidance.astro";
-import DisclaimerNotice from "../components/DisclaimerNotice.astro";
 import PolandMap from "../components/PolandMap";
 import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
 import { parseMapSvg } from "../domain/parse-map-svg";
@@ -48,12 +47,6 @@ const datasetJsonLd = {
   <main id="main-content" class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
     <section>
       <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Is Poland Safe Now?</h1>
-      <p class="mt-3 max-w-3xl text-slate-600">
-        This site tracks publicly reported security-alert exposure across Poland's 16 voivodeships — including
-        developments connected to the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations,
-        drone or missile incidents, RCB warnings, and border, airport, or transport disruptions. It is an
-        independent information service, not an official warning system.
-      </p>
     </section>
 
     <NationalStatusCard summary={nationalSummary} lastUpdated={lastUpdated} />
@@ -90,7 +83,6 @@ const datasetJsonLd = {
     />
 
     <EmergencyGuidance />
-    <DisclaimerNotice />
   </main>
 
   <SiteFooter />
