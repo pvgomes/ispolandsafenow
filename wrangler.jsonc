@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ispolandsafenow",
+  // Package entrypoint provided by @astrojs/cloudflare (resolved by Vite via
+  // node_modules, not the filesystem) so the Cloudflare build/dev tooling
+  // has a real Worker to build from. `npm run build` generates the actual
+  // deployable dist/server/wrangler.json (same bindings, the real bundled
+  // entry) on every build — that generated file, not this one, is what
+  // `npm run preview`/`worker:dev` and production deploys run.
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ispolandsafenow-db",
+      "database_id": "local-dev-placeholder",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

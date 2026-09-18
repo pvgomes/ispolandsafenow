@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import DemoBanner from "../components/DemoBanner.astro";
+import NationalStatusCard from "../components/NationalStatusCard.astro";
+import Legend from "../components/Legend.astro";
+import PlaceholderSection from "../components/PlaceholderSection.astro";
+import EmergencyGuidance from "../components/EmergencyGuidance.astro";
+import DisclaimerNotice from "../components/DisclaimerNotice.astro";
+import PolandMap from "../components/PolandMap";
+import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
+import { parseMapSvg } from "../domain/parse-map-svg";
+import { RegionRepository } from "../repositories/region-repository";
+import { RegionStatusService } from "../services/region-status-service";
+import { summarizeNational } from "../domain/national-summary";
+import { env } from "cloudflare:workers";
+
+const regionRepository = new RegionRepository(env.DB);
+const identities = await regionRepository.listAll();
+const regions = await new RegionStatusService().getRegionsWithStatus(identities);
+const nationalSummary = summarizeNational(regions);
+const { viewBox, paths } = parseMapSvg(mapSvgSource);
+const lastUpdated = new Date().toISOString();
+
+const datasetJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "Is Poland Safe Now? — regional status (demonstration data)",
+  description:
+    "Demonstration-only regional alert levels for the 16 Polish voivodeships. Not derived from real reports.",
+  license: "https://ispolandsafenow.com/methodology",
+  spatialCoverage: {
+    "@type": "Place",
+    name: "Poland",
+  },
+  variableMeasured: "AlertLevel (GREEN, YELLOW, RED, UNKNOWN)",
+};
+---
+
+<BaseLayout
+  title="Is Poland Safe Now? — Regional security-alert overview"
+  description="An independent, demonstration-stage overview of security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, and airspace incidents."
+  path="/"
+  structuredData={[datasetJsonLd]}
+>
+  <SiteHeader />
+  <DemoBanner />
+
+  <main id="main-content" class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
+    <section>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Is Poland Safe Now?</h1>
+      <p class="mt-3 max-w-3xl text-slate-600">
+        This site tracks publicly reported security-alert exposure across Poland's 16 voivodeships — including
+        developments connected to the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations,
+        drone or missile incidents, RCB warnings, and border, airport, or transport disruptions. It is an
+        independent information service, not an official warning system.
+      </p>
+    </section>
+
+    <NationalStatusCard summary={nationalSummary} lastUpdated={lastUpdated} />
+
+    <section aria-labelledby="map-heading">
+      <h2 id="map-heading" class="text-xl font-semibold text-slate-900">Regional map</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Select a voivodeship to see its status. Works with mouse, touch, and keyboard (Tab, then Enter or Space).
+      </p>
+      <div class="mt-4">
+        <Legend />
+      </div>
+      <div class="mt-4">
+        <PolandMap client:load viewBox={viewBox} paths={paths} regions={regions} />
+      </div>
+    </section>
+
+    <PlaceholderSection
+      headingId="whats-happening"
+      heading="What is happening now?"
+      note="Coming soon: an automatically generated summary of current developments once the news-collection pipeline is live."
+    />
+
+    <PlaceholderSection
+      headingId="latest-news"
+      heading="Latest security news"
+      note="Coming soon: recent, relevant news items per region once automated collection is live."
+    />
+
+    <PlaceholderSection
+      headingId="security-outlook"
+      heading="24-hour security outlook"
+      note="Coming soon: a cautious, AI-assisted outlook for the next 24 hours once the classification pipeline is live."
+    />
+
+    <EmergencyGuidance />
+    <DisclaimerNotice />
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

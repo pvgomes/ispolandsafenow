@@ -1,0 +1,57 @@
+# Data sources
+
+## Voivodeship boundaries (the interactive map)
+
+**Source:** [`ppatrzyk/polska-geojson`](https://github.com/ppatrzyk/polska-geojson) —
+`wojewodztwa/wojewodztwa-min.geojson`.
+
+**License of that repository:** MIT.
+
+**Underlying geodata:** the repository states that its boundary data is
+converted from shapefiles derived from the *Państwowy Rejestr Granic i
+Powierzchni Jednostek Podziałów Terytorialnych Kraju* (PRG) — Poland's
+official State Register of Borders, maintained by *Główny Urząd Geodezji i
+Kartografii* (GUGiK, the Head Office of Geodesy and Cartography). PRG data
+is published as open public-sector information under Polish law.
+
+**What we did with it:**
+
+1. Downloaded `wojewodztwa-min.geojson` (16 `Polygon` features, one per
+   voivodeship, each carrying a Polish name in `properties.nazwa`).
+2. Committed the source file unmodified at
+   `scripts/source-data/wojewodztwa-min.geojson`.
+3. Wrote `scripts/convert-map.mjs`, a small, deterministic Node script that:
+   - projects the WGS84 coordinates to a flat SVG viewBox using an
+     equirectangular projection scaled by `cos(mean latitude)` (accurate
+     enough at Poland's latitude and small east–west extent to render
+     correctly without a full map-projection library),
+   - maps each feature's Polish name to our canonical region record (ISO
+     3166-2:PL code, English-compatible slug, Polish name), and
+   - writes one `<path>` per region to `src/assets/maps/poland-voivodeships.svg`,
+     each carrying `data-code`, `data-slug`, and `data-name` attributes.
+4. Committed the generated SVG. **Production never re-fetches or
+   regenerates this file** — `npm run map:convert` is a development-time
+   tool only, run again solely if the source data needs to be refreshed.
+
+**Attribution:** boundary geometry © GUGiK (Główny Urząd Geodezji i
+Kartografii), redistributed as GeoJSON by `ppatrzyk/polska-geojson` (MIT
+license).
+
+**Why not Leaflet/Mapbox/Google Maps/external tiles:** the brief requires a
+Poland-only map with no neighboring countries and no external tile
+requests at runtime. A single local, pre-built SVG satisfies this exactly,
+with no map-library runtime dependency, no API keys, and no network calls
+from the browser.
+
+## Region identity data (`src/data/regions.ts`, `migrations/0002_seed_regions.sql`)
+
+Voivodeship names, ISO 3166-2:PL codes, and slugs are well-established public
+facts (Poland's 16 administrative regions), hand-transcribed once and kept
+in sync across three places — the SVG map, the `REGIONS` TypeScript
+constant, and the D1 seed migration — which
+`tests/unit/region-consistency.test.ts` checks automatically.
+
+## Demonstration classification data (`src/data/demo-classifications.ts`)
+
+Entirely hand-authored for this phase. Not derived from any real report,
+sensor, or feed. See `METHODOLOGY.md` for how it's used and its limits.

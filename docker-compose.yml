@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8787:8787"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - wrangler-state:/app/.wrangler
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  node_modules:
+  wrangler-state:

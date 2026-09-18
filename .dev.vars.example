@@ -1,0 +1,10 @@
+# Local Wrangler dev secrets. Copy this file to `.dev.vars` (gitignored) and
+# fill in real values there. Wrangler loads `.dev.vars` automatically.
+#
+# Nothing in this phase actually reads any secret yet — no news collection
+# or TypeSafe AI calls are implemented. This file exists so the variable a
+# future phase will need is documented and reversible to add.
+
+# Will be used by the future TypeSafe AI-backed ClassificationService.
+# Not read by any code in this phase.
+# TYPESAFE_AI_API_KEY=

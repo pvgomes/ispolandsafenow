@@ -1,0 +1,18 @@
+---
+import { ALERT_LEVELS, ALERT_LEVEL_PRESENTATION } from "../domain/alert-level";
+---
+
+<ul class="flex flex-wrap gap-x-6 gap-y-2" aria-label="Status legend" data-testid="status-legend">
+  {
+    ALERT_LEVELS.map((level) => (
+      <li class="flex items-center gap-2 text-sm text-slate-700">
+        <span class={`h-3 w-3 rounded-full ${ALERT_LEVEL_PRESENTATION[level].dotClass}`} aria-hidden="true" />
+        <span>
+          <span class="font-medium">{ALERT_LEVEL_PRESENTATION[level].label}</span>
+          {" — "}
+          {ALERT_LEVEL_PRESENTATION[level].description}
+        </span>
+      </li>
+    ))
+  }
+</ul>

@@ -1,0 +1,60 @@
+---
+import "../styles/global.css";
+
+export interface Props {
+  title: string;
+  description: string;
+  /** Path only, e.g. "/regions/mazowieckie". Combined with Astro.site for the canonical URL. */
+  path: string;
+  /** Extra JSON-LD objects to embed on this page, in addition to the site-wide WebSite graph. */
+  structuredData?: Record<string, unknown>[];
+}
+
+const { title, description, path, structuredData = [] } = Astro.props;
+const canonicalUrl = new URL(path, Astro.site).toString();
+const siteName = "Is Poland Safe Now?";
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: siteName,
+  url: Astro.site?.toString(),
+  description:
+    "Independent, demonstration-stage tracker of regional security-alert exposure across Poland's 16 voivodeships.",
+  inLanguage: "en",
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    {structuredData.map((entry) => <script type="application/ld+json" set:html={JSON.stringify(entry)} />)}
+  </head>
+  <body class="bg-white text-slate-900 antialiased">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white"
+    >
+      Skip to main content
+    </a>
+    <slot />
+  </body>
+</html>

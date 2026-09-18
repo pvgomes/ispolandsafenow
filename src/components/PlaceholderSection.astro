@@ -1,0 +1,13 @@
+---
+export interface Props {
+  heading: string;
+  headingId: string;
+  note: string;
+}
+const { heading, headingId, note } = Astro.props;
+---
+
+<section class="rounded-xl border border-dashed border-slate-300 p-5" aria-labelledby={headingId}>
+  <h2 id={headingId} class="text-base font-semibold text-slate-900">{heading}</h2>
+  <p class="mt-2 text-sm italic text-slate-500">{note}</p>
+</section>

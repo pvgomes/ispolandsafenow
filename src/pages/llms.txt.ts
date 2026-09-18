@@ -1,0 +1,37 @@
+import type { APIRoute } from "astro";
+import { REGIONS } from "../data/regions";
+
+export const prerender = false;
+
+export const GET: APIRoute = ({ site }) => {
+  const base = site?.toString().replace(/\/$/, "") ?? "";
+  const regionLines = REGIONS.map((r) => `- [${r.namePl}](${base}/regions/${r.slug})`).join("\n");
+
+  const body = `# Is Poland Safe Now?
+
+> Independent, demonstration-stage tracker of regional security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile incidents, RCB warnings, and border/airport/transport disruptions. This is not an official warning system.
+
+Current data mode: demonstration. Live automated classification is not enabled yet — see /methodology.
+
+## Key pages
+
+- [Homepage](${base}/)
+- [Methodology](${base}/methodology)
+- [About](${base}/about)
+
+## Public API
+
+- [GET /api/health](${base}/api/health) — service and database health
+- [GET /api/status](${base}/api/status) — national status summary
+- [GET /api/regions](${base}/api/regions) — per-region status list
+
+## Regions
+
+${regionLines}
+`;
+
+  return new Response(body, {
+    status: 200,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+};

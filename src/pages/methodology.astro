@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import DemoBanner from "../components/DemoBanner.astro";
+---
+
+<BaseLayout
+  title="Methodology — Is Poland Safe Now?"
+  description="How Is Poland Safe Now? classifies regional security status: current demonstration-data phase and the planned news-collection and AI-assisted classification pipeline."
+  path="/methodology"
+>
+  <SiteHeader />
+  <DemoBanner />
+  <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 text-slate-700">
+    <h1 class="text-3xl font-bold text-slate-900">Methodology</h1>
+
+    <section>
+      <h2 class="text-xl font-semibold text-slate-900">Current phase: demonstration data</h2>
+      <p class="mt-2">
+        This build ships only the site foundation: the interactive map, homepage, region pages, and a public API,
+        all backed by fixed demonstration classifications. No news collection or AI classification runs yet. Every
+        status shown is a hand-authored example value, clearly labeled as demonstration data throughout the site.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold text-slate-900">Status levels</h2>
+      <ul class="mt-2 list-inside list-disc space-y-1">
+        <li><strong>Green</strong> — no elevated regional signal found.</li>
+        <li><strong>Yellow</strong> — elevated situation requiring attention.</li>
+        <li><strong>Red</strong> — serious active warning or confirmed incident.</li>
+        <li>
+          <strong>Unknown</strong> — missing, stale, conflicting, or insufficient information. Missing data always
+          resolves to Unknown, never Green.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold text-slate-900">Planned pipeline (not yet implemented)</h2>
+      <p class="mt-2">
+        The production system will later collect news from public sources relevant to Poland's security situation
+        (the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile
+        incidents, RCB warnings, and transport disruptions), and send that evidence to TypeSafe AI for
+        region-by-region classification. Classifications will be re-run on a schedule and stored with full
+        evidence trails in the database, following the same <code>ClassificationService</code> interface this phase
+        already defines.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold text-slate-900">Map data</h2>
+      <p class="mt-2">
+        Voivodeship boundaries are sourced from Poland's official geospatial registry (GUGiK PRG) and converted to a
+        local SVG at development time — see
+        <a class="underline" href="https://github.com/pvgomes/ispolandsafenow/blob/main/DATA_SOURCES.md">
+          DATA_SOURCES.md
+        </a>
+        in the repository for the full attribution and license.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold text-slate-900">Limits</h2>
+      <p class="mt-2">
+        This is an independent information service, not an official warning system, and cannot guarantee safety.
+        Always follow instructions from Polish authorities and RCB. For emergencies, call 112.
+      </p>
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>
