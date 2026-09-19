@@ -32,6 +32,12 @@ framework's build.
 5. Marks the `job_runs` row `succeeded` (with a small summary) or
    `failed` (with the error message).
 
+The same job also runs on demand via `POST /trigger` (header
+`x-trigger-secret` must match the `SCHEDULER_TRIGGER_SECRET` secret),
+returning a small JSON summary (`{ status, regionCount, counts }` or
+`{ status: "failed", error }`) instead of running silently — this is what
+the deploy workflow calls right after each deploy.
+
 If a run fails outright (step 2 or 3 throws), existing regions are left
 at their last good status rather than being forced to UNKNOWN — one
 missed hourly run shouldn't blank out the whole site. `resolveEffectiveStatus`
@@ -43,7 +49,16 @@ the job itself.
 
 ## Deploying and running it
 
-See `DEPLOYMENT.md` for the full steps. In short:
+`.github/workflows/deploy.yml` deploys this Worker automatically on every
+push to `main`, right after the main site, and then calls its
+`POST /trigger` endpoint once (with a fresh, one-off secret it generates
+and sets as `SCHEDULER_TRIGGER_SECRET`) to run a classification
+immediately rather than waiting for the next hourly cron tick. See
+`DEPLOYMENT.md` for the full flow, including how `TYPESAFE_AI_API_KEY`
+gets set.
+
+For a manual/local deploy instead (e.g. to test a scheduler-only change
+before pushing):
 
 ```bash
 npm run scheduler:secret    # once: npx wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc

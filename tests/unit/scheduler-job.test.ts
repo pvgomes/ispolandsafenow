@@ -36,7 +36,7 @@ describe("runClassificationJob (scheduler)", () => {
     );
 
     const db = new InMemoryD1Database(seedAllRegions());
-    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key" };
+    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
 
     await runClassificationJob(env);
 
@@ -59,7 +59,7 @@ describe("runClassificationJob (scheduler)", () => {
     seeded[0]!.current_status = "GREEN";
     seeded[0]!.last_classified_at = "2026-01-01T00:00:00.000Z";
     const db = new InMemoryD1Database(seeded);
-    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key" };
+    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
 
     await runClassificationJob(env);
 
@@ -93,7 +93,7 @@ describe("runClassificationJob (scheduler)", () => {
       }
       return originalPrepare(sql);
     };
-    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key" };
+    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
 
     await runClassificationJob(env);
 

@@ -17,37 +17,43 @@ The main site Worker does **not** need a `TYPESAFE_AI_API_KEY` secret —
 only the scheduler does (below), since the site itself never calls
 TypeSafe AI, it only reads D1.
 
-## Scheduler: deployed manually, not part of the GitHub Actions workflow
+## Scheduler: deployed automatically by the same GitHub Actions workflow
 
 The scheduler (`scheduler/`, hourly Cron Trigger — see
-`scheduler/README.md`) is a separate Worker with its own `wrangler.jsonc`
-and is **not** wired into `.github/workflows/deploy.yml`. Deploy/update it
-by hand when its code changes:
+`scheduler/README.md`) is a separate Worker with its own `wrangler.jsonc`.
+`.github/workflows/deploy.yml` deploys it right after the main site, on
+every push to `main`, using the same `CLOUDFLARE_API_TOKEN` /
+`CLOUDFLARE_ACCOUNT_ID` secrets — no separate manual step needed for an
+ordinary code change.
 
-```bash
-npm run scheduler:deploy   # npx wrangler deploy --config scheduler/wrangler.jsonc
-```
+The workflow also fires an immediate classification run after each
+deploy, rather than waiting for the next hourly cron tick: it generates a
+one-off random secret, sets it as the scheduler's `SCHEDULER_TRIGGER_SECRET`
+(a fresh value every deploy — never stored anywhere), then calls the
+Worker's `POST /trigger` endpoint with it (see `scheduler/src/index.ts`).
+This is what keeps the site from sitting empty right after a fresh
+deploy or a long gap.
 
-It needs its own secret (separate from any secret on the main Worker —
-Cloudflare secrets are per-Worker):
+It needs its own `TYPESAFE_AI_API_KEY` secret (separate from any secret on
+the main Worker — Cloudflare secrets are per-Worker). If a
+`TYPESAFE_AI_API_KEY` GitHub Actions secret exists, the workflow sets it on
+the scheduler automatically on every deploy; if not, that step is skipped
+and the scheduler keeps whatever value (if any) was set on it directly
+before. Without it configured one way or another, the scheduler still runs
+every hour, but every region resolves to `UNKNOWN` (see `METHODOLOGY.md`).
+To set it directly instead of via a GitHub secret:
 
 ```bash
 npm run scheduler:secret   # npx wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc
 ```
 
-Run that once per environment; it persists across future
-`scheduler:deploy` runs. Without it, the scheduler runs every hour but
-every region resolves to `UNKNOWN` (see `METHODOLOGY.md`).
-
 It shares the main app's D1 database (same `database_id`), so it needs no
 separate `wrangler d1 create` or migration step — `migrations/` already
 covers `job_runs`, `region_classifications`, and `classification_evidence`.
 
-**Adding the scheduler deploy to CI** is reasonable future work (add a
-job/step to `deploy.yml` that runs on changes under `scheduler/`), but
-isn't done yet — a bad change to the scheduler is lower-stakes to catch
-manually before deploying, since it only affects background
-classification, not the site's ability to serve pages.
+`npm run scheduler:deploy` still works for a manual/local deploy (e.g. to
+test a scheduler-only change before pushing), it's just no longer the only
+way it gets deployed.
 
 ## Local vs. remote D1
 
@@ -64,7 +70,9 @@ but isn't invoked outside the GitHub Actions workflow.
 2. `npx wrangler login`, create a Cloudflare API token (Account → D1 →
    Edit, Account → Workers Scripts → Edit) and add it plus the account ID
    as `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` GitHub secrets.
-3. Push to `main` once to deploy the site via CI.
-4. `npm run scheduler:secret` then `npm run scheduler:deploy` to stand up
-   the hourly classification job.
+3. Optionally add a `TYPESAFE_AI_API_KEY` GitHub secret so the workflow can
+   set it on the scheduler automatically (see above) — otherwise run
+   `npm run scheduler:secret` once by hand instead.
+4. Push to `main` once to deploy the site and the scheduler via CI, and
+   fire the first classification run.
 5. Attach the custom domain to the Worker in the Cloudflare dashboard.

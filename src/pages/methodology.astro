@@ -6,7 +6,7 @@ import SiteFooter from "../components/SiteFooter.astro";
 
 <BaseLayout
   title="Methodology — Is Poland Safe Now?"
-  description="How Is Poland Safe Now? classifies regional security status using TypeSafe AI, and the limits of the current pipeline."
+  description="How Is Poland Safe Now? classifies regional security status, and the limits of that process."
   path="/methodology"
 >
   <SiteHeader />
@@ -14,15 +14,18 @@ import SiteFooter from "../components/SiteFooter.astro";
     <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Methodology</h1>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Current phase: live, news-grounded classification</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">How a status is decided</h2>
       <p class="mt-2">
-        Every region's status is produced by <code>TypeSafeAiClassificationService</code>, which first collects
-        recent headlines from Polish and international news portals (covering roughly the last 48 hours), then
-        sends them to TypeSafe AI's System One API to classify each of the 16 voivodeships from that evidence. The
-        collection itself is not persisted or scheduled yet (see <a class="underline" href="/about">About</a>) — it
-        runs fresh on each request, cached briefly to avoid refetching on every page load. If a region has no
-        relevant headline, or the TypeSafe AI call is unavailable, misconfigured, or returns something unusable,
-        that region shows <strong>Unknown</strong> — never a false Green.
+        Every hour, we gather recent news from Polish and international sources — covering roughly the last two
+        days — about developments relevant to Poland's regional security situation. That evidence is then reviewed
+        by an AI model, which assigns each of Poland's 16 voivodeships a status based only on what the news
+        actually reports for that region. Nothing is invented: if there is no relevant news for a region, its
+        status simply stays calm.
+      </p>
+      <p class="mt-2">
+        If, for any reason, that hourly review doesn't run or a region's information gets too old to trust, that
+        region is marked <strong>Unknown</strong> rather than shown as calm — we would always rather say "we don't
+        know" than give a false sense of safety.
       </p>
     </section>
 
@@ -40,24 +43,10 @@ import SiteFooter from "../components/SiteFooter.astro";
     </section>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Planned pipeline (not yet implemented)</h2>
-      <p class="mt-2">
-        A future phase will persist collected news and classifications to the database with full evidence trails,
-        re-run on a schedule via a Cron Trigger instead of on-demand per request, and broaden collection beyond
-        RSS search queries — following the same <code>ClassificationService</code> interface this phase already
-        defines.
-      </p>
-    </section>
-
-    <section>
       <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Map data</h2>
       <p class="mt-2">
-        Voivodeship boundaries are sourced from Poland's official geospatial registry (GUGiK PRG) and converted to a
-        local SVG at development time — see
-        <a class="underline" href="https://github.com/pvgomes/ispolandsafenow/blob/main/DATA_SOURCES.md">
-          DATA_SOURCES.md
-        </a>
-        in the repository for the full attribution and license.
+        Voivodeship boundaries shown on the map come from Poland's official geospatial registry, published by the
+        Polish government's mapping authority.
       </p>
     </section>
 
@@ -65,7 +54,8 @@ import SiteFooter from "../components/SiteFooter.astro";
       <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Limits</h2>
       <p class="mt-2">
         This is an independent information service, not an official warning system, and cannot guarantee safety.
-        Always follow instructions from Polish authorities and RCB. For emergencies, call 112.
+        News coverage can be incomplete, delayed, or wrong, and an AI-assisted review can make mistakes. Always
+        follow instructions from Polish authorities and RCB. For emergencies, call 112.
       </p>
     </section>
   </main>

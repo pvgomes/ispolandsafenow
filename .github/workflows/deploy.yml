@@ -42,3 +42,46 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy scheduler Worker
+        id: deploy_scheduler
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --config scheduler/wrangler.jsonc | tee /tmp/scheduler-deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' /tmp/scheduler-deploy.log | head -n1)
+          if [ -z "$url" ]; then
+            echo "Could not determine the scheduler Worker's URL from deploy output." >&2
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set the TypeSafe AI key on the scheduler (if configured)
+        if: ${{ secrets.TYPESAFE_AI_API_KEY != '' }}
+        run: printf '%s' "$TYPESAFE_AI_API_KEY" | npx wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+
+      - name: Trigger an immediate classification run
+        run: |
+          set -euo pipefail
+          trigger_secret=$(openssl rand -hex 32)
+          echo "::add-mask::$trigger_secret"
+          printf '%s' "$trigger_secret" | npx wrangler secret put SCHEDULER_TRIGGER_SECRET --config scheduler/wrangler.jsonc
+
+          http_status=$(curl -sS -o /tmp/trigger-response.json -w '%{http_code}' -X POST \
+            "${{ steps.deploy_scheduler.outputs.url }}/trigger" \
+            -H "x-trigger-secret: $trigger_secret")
+          echo "Trigger response (HTTP $http_status):"
+          cat /tmp/trigger-response.json
+          echo
+          if [ "$http_status" != "200" ]; then
+            echo "Classification job did not succeed — see the response above (e.g. TYPESAFE_AI_API_KEY not yet configured)." >&2
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
