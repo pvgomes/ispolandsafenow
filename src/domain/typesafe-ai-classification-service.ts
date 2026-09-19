@@ -1,6 +1,6 @@
 import { isAlertLevel, toAlertLevel, type AlertLevel } from "./alert-level";
 import type { ClassificationEvidence, ClassificationInput, ClassificationService, RegionClassification } from "./classification-service";
-import { collectRecentNews, type CollectedNewsItem } from "./news-collection";
+import type { NewsItem } from "./news-item";
 import type { RegionIdentity } from "./region";
 
 const TYPESAFE_AI_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
@@ -8,6 +8,9 @@ const TYPESAFE_AI_MODEL = "jev-latest";
 
 /** Freshness window applied to every classification this service produces. */
 const CLASSIFICATION_TTL_MS = 2 * 60 * 60 * 1000;
+
+/** Supplies the headlines used as evidence for one classification run. */
+export type EvidenceSource = () => Promise<readonly NewsItem[]>;
 
 interface ChoiceAnswer {
   readonly type: "choice";
@@ -19,11 +22,11 @@ interface SystemOneResponse {
   readonly answers?: Record<string, { type?: string; choice?: string; confidence?: number }>;
 }
 
-function buildStatePrompt(asOf: string, news: readonly CollectedNewsItem[]): string {
+function buildStatePrompt(asOf: string, news: readonly NewsItem[]): string {
   const newsBlock =
     news.length > 0
       ? news
-          .map((item) => `- [${item.publishedAt ?? "date unknown"}]${item.sourceName ? ` (${item.sourceName})` : ""} ${item.title} — ${item.url}`)
+          .map((item) => `- [${item.publishedAt}]${item.sourceName ? ` (${item.sourceName})` : ""} ${item.title} — ${item.url}`)
           .join("\n")
       : "(No recent news items could be retrieved for this run.)";
 
@@ -63,7 +66,7 @@ function isChoiceAnswer(value: unknown): value is ChoiceAnswer {
   );
 }
 
-function toEvidence(news: readonly CollectedNewsItem[]): ClassificationEvidence[] {
+function toEvidence(news: readonly NewsItem[]): ClassificationEvidence[] {
   return news.map((item) => ({
     sourceUrl: item.url,
     sourceName: item.sourceName,
@@ -75,10 +78,11 @@ function toEvidence(news: readonly CollectedNewsItem[]): ClassificationEvidence[
 }
 
 /**
- * The current, live implementation of `ClassificationService`: collects
- * recent news (`collectRecentNews`) and calls TypeSafe AI's System One
- * API (`jev-latest`) with that evidence, one "choice" question per
- * region. Intended to be called by the scheduled worker
+ * The current, live implementation of `ClassificationService`: takes the
+ * recent headlines supplied by `evidenceSource` (in production, the last
+ * 48 hours of `news_items` via `NewsRepository`) and calls TypeSafe AI's
+ * System One API (`jev-latest`) with that evidence, one "choice" question
+ * per region. Intended to be called by the scheduled worker
  * (`scheduler/src/index.ts`), roughly once per hour — not per site
  * visitor — so the site itself only ever reads the persisted result from
  * D1 (see `RegionRepository`); it never calls this service directly.
@@ -94,14 +98,17 @@ function toEvidence(news: readonly CollectedNewsItem[]): ClassificationEvidence[
  * pipeline-failure boundary instead of in the model's own choices.
  */
 export class TypeSafeAiClassificationService implements ClassificationService {
-  constructor(private readonly apiKey: string | undefined) {}
+  constructor(
+    private readonly apiKey: string | undefined,
+    private readonly evidenceSource: EvidenceSource,
+  ) {}
 
   async classifyRegions(input: ClassificationInput): Promise<RegionClassification[]> {
     if (!this.apiKey) {
       return input.regions.map((region) => this.unknownClassification(region, input.asOf, "TYPESAFE_AI_API_KEY is not configured."));
     }
 
-    const news = await collectRecentNews(new Date(input.asOf));
+    const news = await this.evidenceSource();
     const evidence = toEvidence(news);
 
     let response: Response;

@@ -7,12 +7,19 @@ project scaffolding, Cloudflare configuration, Docker-based local
 development, a D1 database foundation, the interactive Poland map, a
 homepage backed by an hourly, news-grounded TypeSafe AI classification
 job, a basic public status API, and tests/documentation.
-`TypeSafeAiClassificationService` collects recent headlines
-(`src/domain/news-collection.ts`) and sends them to TypeSafe AI's System
-One API as evidence; a separate scheduled Worker (`scheduler/`) runs this
-once per hour and persists the result to D1 with a full evidence trail.
-The main site never calls TypeSafe AI itself — it only reads D1 — so
-traffic has no effect on AI cost or rate limits.
+News is collected by `scripts/fetch-news.ts` running in GitHub Actions
+(`.github/workflows/fetch-news.yml`, every two hours and on each deploy):
+it queries Google News RSS across a fixed set of Poland / Russia–Ukraine
+topics over an 8-day window (`src/domain/news-collection.ts`) and upserts
+the headlines into the `news_items` D1 table. It runs off-platform on
+purpose — Google answers RSS requests coming from Cloudflare Workers with
+HTTP 503, so a Worker-side fetch is always empty. The homepage "Latest
+headlines" ticker and `/news` read `news_items` (`NewsRepository`), and a
+separate scheduled Worker (`scheduler/`) hands the last 48 hours of it to
+`TypeSafeAiClassificationService` as evidence for TypeSafe AI's System
+One API once per hour, persisting the result to D1 with a full evidence
+trail. The main site never calls TypeSafe AI itself — it only reads D1 —
+so traffic has no effect on AI cost or rate limits.
 
 ## Why Astro
 
@@ -129,10 +136,13 @@ since D1 migrations don't need a built Worker.
 ## Still deliberately limited
 
 - **News collection** (`src/domain/news-collection.ts`) is a fixed set of
-  RSS search queries shared across all 16 regions, not per-region-scored
-  or sourced from dedicated regional/official outlets (e.g. RCB's own
-  feed). `TypeSafeAiClassificationService` calls TypeSafe AI directly
-  over HTTP (`fetch`, no SDK).
+  Google News RSS search queries shared across all 16 regions plus a
+  keyword relevance filter (`src/domain/news-relevance.ts`), not
+  per-region-scored or sourced from dedicated regional/official outlets
+  (e.g. RCB's own feed). It depends on a GitHub Actions cron, so if
+  Actions is paused the feed goes stale (the scheduler keeps classifying,
+  with less and less evidence). `TypeSafeAiClassificationService` calls
+  TypeSafe AI directly over HTTP (`fetch`, no SDK).
 - **No retry/alerting** beyond "the next hourly run tries again" — a
   `job_runs` row records success/failure, but nothing pages anyone on
   repeated failures.

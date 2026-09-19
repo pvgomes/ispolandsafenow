@@ -1,8 +1,9 @@
 ---
-import type { RecentHeadline } from "../domain/dedupe-headlines";
+import type { NewsItem } from "../domain/news-item";
+import { formatShortDate } from "../domain/format-news-date";
 
 export interface Props {
-  headlines: RecentHeadline[];
+  headlines: NewsItem[];
 }
 
 const { headlines } = Astro.props;
@@ -11,7 +12,7 @@ const { headlines } = Astro.props;
 {
   headlines.length === 0 ? (
     <p class="text-sm italic text-slate-500 dark:text-slate-400" data-testid="news-ticker-empty">
-      Headlines will appear here once the classification job has collected recent news.
+      Headlines will appear here once the news feed has been collected.
     </p>
   ) : (
     <div class="relative min-h-[1.75rem]" data-news-ticker data-testid="news-ticker">
@@ -19,14 +20,17 @@ const { headlines } = Astro.props;
         {headlines.map((item, index) => (
           <li hidden={index !== 0} data-ticker-item class="text-base text-slate-700 dark:text-slate-300">
             <a
-              href={item.sourceUrl}
+              href={item.url}
               target="_blank"
               rel="noopener noreferrer"
               class="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:decoration-slate-600 dark:hover:decoration-slate-400"
             >
               {item.title}
             </a>
-            {item.sourceName && <span class="ml-2 text-sm text-slate-400 dark:text-slate-500">— {item.sourceName}</span>}
+            <span class="ml-2 whitespace-nowrap text-sm text-slate-400 dark:text-slate-500">
+              <time datetime={item.publishedAt}>{formatShortDate(item.publishedAt)}</time>
+              {item.sourceName && <> · {item.sourceName}</>}
+            </span>
           </li>
         ))}
       </ul>

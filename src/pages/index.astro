@@ -20,7 +20,7 @@ const regionRepository = new RegionRepository(env.DB);
 // (scheduler/src/index.ts) — the site never calls TypeSafe AI itself, so
 // this scales to any amount of traffic at a flat cost.
 const regions = await regionRepository.listAll();
-const headlines = await new NewsRepository(env.DB).listRecentHeadlines(8);
+const headlines = await new NewsRepository(env.DB).listLatest(10);
 const nationalSummary = summarizeNational(regions);
 const { viewBox, paths } = parseMapSvg(mapSvgSource);
 const classifiedTimestamps = regions.map((r) => r.lastClassifiedAt).filter((t): t is string => t !== null);

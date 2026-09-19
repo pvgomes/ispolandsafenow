@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runClassificationJob } from "../../scheduler/src/index";
 import { REGIONS } from "../../src/data/regions";
-import { InMemoryD1Database, type InMemoryRegionRow } from "../fakes/in-memory-d1";
+import { InMemoryD1Database, type InMemoryNewsRow, type InMemoryRegionRow } from "../fakes/in-memory-d1";
 
 function seedAllRegions(): InMemoryRegionRow[] {
   return REGIONS.map((r) => ({
@@ -16,7 +16,13 @@ function seedAllRegions(): InMemoryRegionRow[] {
   }));
 }
 
-const EMPTY_RSS_FEED = `<?xml version="1.0"?><rss><channel></channel></rss>`;
+const NOW = Date.now();
+const hoursAgo = (h: number) => new Date(NOW - h * 60 * 60 * 1000).toISOString();
+
+const NEWS: InMemoryNewsRow[] = [
+  { id: 1, url: "https://a.pl/fresh", title: "Dron nad Podlasiem", source_name: "A", published_at: hoursAgo(3) },
+  { id: 2, url: "https://b.pl/old", title: "Stara wiadomość", source_name: "B", published_at: hoursAgo(72) },
+];
 
 describe("runClassificationJob (scheduler)", () => {
   afterEach(() => {
@@ -29,13 +35,10 @@ describe("runClassificationJob (scheduler)", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
-        if (url.includes("news.google.com")) return new Response(EMPTY_RSS_FEED, { status: 200 });
-        return new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 });
-      }),
+      vi.fn(async () => new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 })),
     );
 
-    const db = new InMemoryD1Database(seedAllRegions());
+    const db = new InMemoryD1Database(seedAllRegions(), NEWS);
     const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
 
     await runClassificationJob(env);
@@ -44,13 +47,17 @@ describe("runClassificationJob (scheduler)", () => {
     expect(db.jobRuns[0]?.status).toBe("succeeded");
     expect(db.classifications).toHaveLength(16);
     expect(db.regions.every((r) => r.current_status === "GREEN")).toBe(true);
+    // Evidence is the last 48h of news_items (one row per region per
+    // headline) — the 72h-old item is excluded, and nothing was fetched
+    // from Google News (Workers are blocked there).
+    expect(db.evidence).toHaveLength(16);
+    expect(db.evidence.every((e) => e.source_url === "https://a.pl/fresh")).toBe(true);
   });
 
   it("marks the job run failed and leaves existing region status untouched when TypeSafe AI is unreachable", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
-        if (url.includes("news.google.com")) return new Response(EMPTY_RSS_FEED, { status: 200 });
+      vi.fn(async () => {
         throw new Error("network down");
       }),
     );
@@ -76,8 +83,7 @@ describe("runClassificationJob (scheduler)", () => {
   it("marks the job run failed without touching regions when the writer itself throws", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
-        if (url.includes("news.google.com")) return new Response(EMPTY_RSS_FEED, { status: 200 });
+      vi.fn(async () => {
         return new Response(JSON.stringify({ model: "jev-latest", answers: {} }), { status: 200 });
       }),
     );

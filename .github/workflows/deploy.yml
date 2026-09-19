@@ -39,6 +39,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Google blocks RSS fetches from Workers, so news is collected here
+      # (see .github/workflows/fetch-news.yml for the recurring run) —
+      # done before the classification trigger below so that run has
+      # evidence to work with.
+      - name: Fetch news into D1
+        run: node scripts/fetch-news.ts
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy Worker
         run: npx wrangler deploy
         env:

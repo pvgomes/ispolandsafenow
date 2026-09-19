@@ -55,8 +55,21 @@ constant, and the D1 seed migration — which
 
 Alert-level classifications come from TypeSafe AI's System One API,
 called by `TypeSafeAiClassificationService`
-(`src/domain/typesafe-ai-classification-service.ts`), using headlines
-collected on demand from Google News RSS (`src/domain/news-collection.ts`)
-— mostly Polish portals, plus some international outlets — as evidence.
-Collection is ad hoc per request, not a stored, citable source: see
-`METHODOLOGY.md` for how it's used and its current limits.
+(`src/domain/typesafe-ai-classification-service.ts`), using the last
+48 hours of the stored news feed as evidence.
+
+## News feed (live)
+
+Headlines are collected from Google News RSS search
+(`src/domain/news-collection.ts`) by `scripts/fetch-news.ts`, which runs in
+GitHub Actions every two hours (and on each deploy) and stores the
+results in the `news_items` D1 table — title, source outlet, publication
+time and the Google News link, deduplicated by link. Queries cover Poland
+and the Russia–Ukraine war as it touches Poland: airspace and drone
+incidents, the Belarus border, Kaliningrad, RCB alerts, NATO's eastern
+flank; results are mostly Polish portals (Onet, WP, Interia, PAP, TVN24,
+RMF, …) plus international outlets, filtered by a keyword relevance check
+(`src/domain/news-relevance.ts`). The window is 8 days, so a fresh
+database is backfilled with about a week of history on the first run.
+The feed is shown on the homepage ticker and `/news`; see
+`METHODOLOGY.md` for how the classifier uses it.

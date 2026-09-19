@@ -39,6 +39,14 @@ export interface InMemoryEvidenceRow {
   relevance_score: number | null;
 }
 
+export interface InMemoryNewsRow {
+  id: number;
+  url: string;
+  title: string;
+  source_name: string | null;
+  published_at: string;
+}
+
 export interface InMemoryJobRunRow {
   id: number;
   job_type: string;
@@ -169,6 +177,16 @@ class InMemoryStatement {
       return undefined;
     }
 
+    if (sql.includes("FROM news_items")) {
+      const hasSince = sql.includes("WHERE published_at >=");
+      const since = hasSince ? (args[0] as string) : null;
+      const limit = (hasSince ? args[1] : args[0]) as number;
+      return [...this.db.news]
+        .filter((r) => since === null || r.published_at >= since)
+        .sort((a, b) => b.published_at.localeCompare(a.published_at) || b.id - a.id)
+        .slice(0, limit);
+    }
+
     if (sql.includes("FROM regions") && sql.includes("WHERE code")) {
       return this.db.regions.find((r) => r.code === args[0]) ?? null;
     }
@@ -188,7 +206,10 @@ export class InMemoryD1Database {
   classifications: InMemoryClassificationRow[] = [];
   evidence: InMemoryEvidenceRow[] = [];
 
-  constructor(public regions: InMemoryRegionRow[]) {}
+  constructor(
+    public regions: InMemoryRegionRow[],
+    public news: InMemoryNewsRow[] = [],
+  ) {}
 
   prepare(sql: string) {
     return new InMemoryStatement(sql, this);

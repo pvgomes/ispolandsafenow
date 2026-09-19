@@ -1,20 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TypeSafeAiClassificationService } from "../../src/domain/typesafe-ai-classification-service";
+import type { NewsItem } from "../../src/domain/news-item";
 import type { RegionIdentity } from "../../src/domain/region";
 
 const REGION_A: RegionIdentity = { code: "PL-14", slug: "mazowieckie", namePl: "Mazowieckie", nameEn: "Mazowieckie" };
 const REGION_B: RegionIdentity = { code: "PL-20", slug: "podlaskie", namePl: "Podlaskie", nameEn: "Podlaskie" };
 
-const EMPTY_RSS_FEED = `<?xml version="1.0"?><rss><channel></channel></rss>`;
+const NO_NEWS = async (): Promise<NewsItem[]> => [];
 
-/** Routes "news.google.com" calls to a canned RSS response and everything else to the given TypeSafe AI handler. */
-function stubFetch(typeSafeAiHandler: (init: RequestInit) => Response, rssBody: string = EMPTY_RSS_FEED) {
-  const fetchSpy = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url.includes("news.google.com")) {
-      return new Response(rssBody, { status: 200 });
-    }
-    return typeSafeAiHandler(init ?? {});
-  });
+function stubFetch(typeSafeAiHandler: (init: RequestInit) => Response) {
+  const fetchSpy = vi.fn(async (_url: string, init?: RequestInit) => typeSafeAiHandler(init ?? {}));
   vi.stubGlobal("fetch", fetchSpy);
   return fetchSpy;
 }
@@ -28,7 +23,7 @@ describe("TypeSafeAiClassificationService", () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
 
-    const service = new TypeSafeAiClassificationService(undefined);
+    const service = new TypeSafeAiClassificationService(undefined, NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A, REGION_B], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -36,15 +31,15 @@ describe("TypeSafeAiClassificationService", () => {
     expect(result.every((r) => r.status === "UNKNOWN")).toBe(true);
   });
 
-  it("parses a successful TypeSafe AI response into region classifications, using collected news as evidence", async () => {
-    const rssFeed = `<?xml version="1.0"?><rss><channel>
-      <item>
-        <title>Incydent na granicy polsko-białoruskiej</title>
-        <link>https://example-news.pl/incydent</link>
-        <pubDate>${new Date().toUTCString()}</pubDate>
-        <source url="https://example-news.pl">Example News</source>
-      </item>
-    </channel></rss>`;
+  it("parses a successful TypeSafe AI response into region classifications, using the supplied news as evidence", async () => {
+    const news: NewsItem[] = [
+      {
+        title: "Incydent na granicy polsko-białoruskiej",
+        url: "https://example-news.pl/incydent",
+        sourceName: "Example News",
+        publishedAt: "2026-09-17T20:00:00.000Z",
+      },
+    ];
 
     const fetchSpy = stubFetch(
       () =>
@@ -59,16 +54,17 @@ describe("TypeSafeAiClassificationService", () => {
           }),
           { status: 200 },
         ),
-      rssFeed,
     );
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", async () => news);
     const result = await service.classifyRegions({ regions: [REGION_A, REGION_B], asOf: "2026-09-18T00:00:00.000Z" });
 
-    // 7 news queries + 1 TypeSafe AI call.
-    expect(fetchSpy).toHaveBeenCalledTimes(8);
+    // Exactly one network call: TypeSafe AI. News is supplied, never fetched here.
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     const typeSafeAiCall = fetchSpy.mock.calls.find((call) => call[0] === "https://api.typesafe.ai/v1/systemone");
     expect(typeSafeAiCall).toBeDefined();
+    const body = JSON.parse((typeSafeAiCall?.[1] as RequestInit).body as string);
+    expect(body.state).toContain("Incydent na granicy polsko-białoruskiej");
     expect((typeSafeAiCall?.[1] as RequestInit & { headers: Record<string, string> }).headers.Authorization).toBe("Bearer test-key");
 
     const byCode = new Map(result.map((r) => [r.regionCode, r]));
@@ -82,7 +78,7 @@ describe("TypeSafeAiClassificationService", () => {
   it("resolves to UNKNOWN when the API responds with a non-2xx status", async () => {
     stubFetch(() => new Response("error", { status: 401 }));
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("UNKNOWN");
@@ -91,7 +87,7 @@ describe("TypeSafeAiClassificationService", () => {
   it("resolves to UNKNOWN when a region's answer is missing from the response", async () => {
     stubFetch(() => new Response(JSON.stringify({ model: "jev-latest", answers: {} }), { status: 200 }));
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("UNKNOWN");
@@ -105,7 +101,7 @@ describe("TypeSafeAiClassificationService", () => {
         }),
     );
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("UNKNOWN");
@@ -119,7 +115,7 @@ describe("TypeSafeAiClassificationService", () => {
         }),
     );
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("UNKNOWN");
@@ -133,7 +129,7 @@ describe("TypeSafeAiClassificationService", () => {
         }),
     );
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("GREEN");
@@ -148,7 +144,7 @@ describe("TypeSafeAiClassificationService", () => {
         }),
     );
 
-    const service = new TypeSafeAiClassificationService("test-key");
+    const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     const typeSafeAiCall = fetchSpy.mock.calls.find((call) => call[0] === "https://api.typesafe.ai/v1/systemone");

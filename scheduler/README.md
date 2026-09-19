@@ -19,9 +19,11 @@ framework's build.
 ## What it does (`src/index.ts`, runs hourly — see `wrangler.jsonc`'s `triggers.crons`)
 
 1. Inserts a `job_runs` row (`status: 'running'`).
-2. Collects recent news (`collectRecentNews`, `src/domain/news-collection.ts`
-   in the main app — reused here directly, since it's just a TS import,
-   not a network call to the other Worker).
+2. Reads the last 48 hours of headlines (up to 40) from the `news_items`
+   table (`NewsRepository`, a TS import from the main app). It does not
+   fetch news itself: Google answers RSS requests from Workers with
+   HTTP 503, so collection runs in GitHub Actions instead
+   (`scripts/fetch-news.ts`, `.github/workflows/fetch-news.yml`).
 3. Calls TypeSafe AI's System One API once for all 16 regions with that
    evidence (`TypeSafeAiClassificationService`).
 4. For each region: inserts a `region_classifications` row (full history,
@@ -84,6 +86,8 @@ run without waiting for the top of the hour.
 
 - News collection is a fixed set of RSS search queries shared across all
   16 regions (see `src/domain/news-collection.ts`'s doc comment) — not
-  regional-outlet-specific or scored per region.
+  regional-outlet-specific or scored per region — and lives in a GitHub
+  Actions cron, so a run with an empty/stale `news_items` table
+  classifies on little or no evidence (the prompt defaults to GREEN).
 - No retry/backoff beyond "the next hourly run tries again."
 - No alerting on repeated `job_runs` failures.

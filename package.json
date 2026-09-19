@@ -17,6 +17,8 @@
     "db:migrate:local": "wrangler d1 migrations apply ispolandsafenow-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply ispolandsafenow-db --remote",
     "map:convert": "node scripts/convert-map.mjs",
+    "news:fetch": "node scripts/fetch-news.ts",
+    "news:fetch:local": "node scripts/fetch-news.ts --local",
     "scheduler:deploy": "wrangler deploy --config scheduler/wrangler.jsonc",
     "scheduler:secret": "wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc",
     "scheduler:tail": "wrangler tail --config scheduler/wrangler.jsonc",

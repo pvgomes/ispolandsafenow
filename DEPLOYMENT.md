@@ -52,7 +52,26 @@ npm run scheduler:secret   # npx wrangler secret put TYPESAFE_AI_API_KEY --confi
 
 It shares the main app's D1 database (same `database_id`), so it needs no
 separate `wrangler d1 create` or migration step — `migrations/` already
-covers `job_runs`, `region_classifications`, and `classification_evidence`.
+covers `job_runs`, `region_classifications`, `classification_evidence`,
+and `news_items`.
+
+## News feed
+
+Headlines are not fetched by either Worker (Google blocks RSS requests
+from Cloudflare Workers). `.github/workflows/fetch-news.yml` runs
+`scripts/fetch-news.ts` every two hours — and `deploy.yml` runs it once
+per deploy, before triggering a classification — writing into the
+`news_items` table with the same `CLOUDFLARE_API_TOKEN` /
+`CLOUDFLARE_ACCOUNT_ID` secrets. To backfill or refresh by hand:
+
+```bash
+npm run news:fetch                 # remote D1, last 8 days
+npm run news:fetch -- --days=3     # shorter window
+npm run news:fetch:local           # local D1 for `npm run dev`
+node scripts/fetch-news.ts --dry-run   # print the SQL, write nothing
+```
+
+Re-running is safe: rows are keyed by link (`INSERT OR IGNORE`).
 
 `npm run scheduler:deploy` still works for a manual/local deploy (e.g. to
 test a scheduler-only change before pushing), it's just no longer the only

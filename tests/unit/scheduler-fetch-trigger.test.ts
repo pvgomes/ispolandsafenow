@@ -16,8 +16,6 @@ function seedAllRegions(): InMemoryRegionRow[] {
   }));
 }
 
-const EMPTY_RSS_FEED = `<?xml version="1.0"?><rss><channel></channel></rss>`;
-
 describe("scheduler fetch handler (POST /trigger)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -73,10 +71,7 @@ describe("scheduler fetch handler (POST /trigger)", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
-        if (url.includes("news.google.com")) return new Response(EMPTY_RSS_FEED, { status: 200 });
-        return new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 });
-      }),
+      vi.fn(async () => new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 })),
     );
 
     const db = new InMemoryD1Database(seedAllRegions());

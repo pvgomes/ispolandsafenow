@@ -1,8 +1,13 @@
 import { REGIONS } from "../../src/data/regions";
 import { TypeSafeAiClassificationService } from "../../src/domain/typesafe-ai-classification-service";
 import { ClassificationWriter } from "../../src/repositories/classification-writer";
+import { NewsRepository } from "../../src/repositories/news-repository";
 
 const JOB_TYPE = "classification";
+
+/** How far back in `news_items` a run looks for evidence. */
+const EVIDENCE_LOOKBACK_MS = 48 * 60 * 60 * 1000;
+const EVIDENCE_LIMIT = 40;
 
 export interface ClassificationJobResult {
   readonly status: "succeeded" | "failed";
@@ -46,8 +51,15 @@ export async function runClassificationJob(env: Env): Promise<ClassificationJobR
   const jobRunId = await writer.startJobRun(JOB_TYPE);
 
   try {
-    const service = new TypeSafeAiClassificationService(env.TYPESAFE_AI_API_KEY);
     const asOf = new Date().toISOString();
+    // Evidence comes from `news_items`, filled by scripts/fetch-news.ts
+    // from GitHub Actions — Google News blocks fetches made from Workers,
+    // so this Worker deliberately never fetches RSS itself.
+    const newsRepository = new NewsRepository(env.DB);
+    const since = new Date(Date.parse(asOf) - EVIDENCE_LOOKBACK_MS).toISOString();
+    const service = new TypeSafeAiClassificationService(env.TYPESAFE_AI_API_KEY, () =>
+      newsRepository.listPublishedSince(since, EVIDENCE_LIMIT),
+    );
     const classifications = await service.classifyRegions({ regions: REGIONS, asOf });
 
     for (const classification of classifications) {

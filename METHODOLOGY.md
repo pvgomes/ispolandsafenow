@@ -51,12 +51,17 @@ Every status shown on the site is read from D1 (`RegionRepository`) —
 the site itself never calls TypeSafe AI. A separate scheduled Worker
 (`scheduler/`, see `scheduler/README.md`) runs once per hour and:
 
-1. Calls `collectRecentNews` (`src/domain/news-collection.ts`), which
-   queries Google News RSS across a fixed set of Polish- and
+1. Reads the last 48 hours of headlines (up to 40) from the `news_items`
+   table (`NewsRepository.listPublishedSince`). That table is filled
+   separately by `scripts/fetch-news.ts` in GitHub Actions
+   (`.github/workflows/fetch-news.yml`, every two hours and on deploy),
+   which queries Google News RSS across a fixed set of Polish- and
    English-language topics (Belarus border activity, Kaliningrad, drone
-   and airspace incidents, RCB warnings, the Russia-Ukraine war) and
-   returns recent, deduplicated headlines — mostly Polish portals, plus
-   some international outlets, covering roughly the last 48 hours.
+   and airspace incidents, RCB warnings, the Russia-Ukraine war) over an
+   8-day window and keeps relevant, deduplicated headlines — mostly
+   Polish portals, plus some international outlets. Collection runs
+   outside Cloudflare because Google rejects RSS requests from Workers
+   (HTTP 503).
 2. Sends those headlines to TypeSafe AI's System One API
    (`POST https://api.typesafe.ai/v1/systemone`, model `jev-latest`) as
    the prompt's evidence, asking one "choice" question per region,
@@ -96,15 +101,18 @@ one-class swap in the scheduler, not a rewrite of the site.
 
 ## Still limited
 
-- News collection is a fixed set of RSS search queries shared across all
-  16 regions, not scored or sourced per region from dedicated
-  outlets (e.g. RCB's own feed).
+- News collection is a fixed set of RSS search queries plus a keyword
+  relevance filter shared across all 16 regions, not scored or sourced
+  per region from dedicated outlets (e.g. RCB's own feed). It depends on
+  the GitHub Actions cron; if that stops, the scheduler keeps running
+  with a shrinking evidence window.
 - No retry/alerting beyond "the next hourly run tries again" — a
   `job_runs` row records success/failure, nothing pages anyone.
-- A classification's evidence (collected headlines) is persisted in
-  `classification_evidence` but not yet exposed anywhere — not in the UI,
-  not in `/api/regions`. It's there for a future region-page "sources"
-  section or an evidence field on the API response.
+- The headlines themselves are public (homepage ticker, `/news`), but
+  which ones backed a given classification (`classification_evidence`) is
+  not yet exposed — not in the UI, not in `/api/regions`. It's there for
+  a future region-page "sources" section or an evidence field on the API
+  response.
 
 ## Limits
 

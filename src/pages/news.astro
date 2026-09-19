@@ -3,16 +3,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import { NewsRepository } from "../repositories/news-repository";
-import { isRussiaUkraineRelated } from "../domain/news-topic";
+import { DEFAULT_LOOKBACK_DAYS } from "../domain/news-collection";
+import { formatDayHeading, toUtcDay } from "../domain/format-news-date";
+import type { NewsItem } from "../domain/news-item";
 import { env } from "cloudflare:workers";
 
-const allHeadlines = await new NewsRepository(env.DB).listRecentHeadlines(50);
-const newsHeadlines = allHeadlines.filter((item) => isRussiaUkraineRelated(item.title));
+const since = new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+const items = await new NewsRepository(env.DB).listPublishedSince(since, 300);
+
+const byDay = new Map<string, NewsItem[]>();
+for (const item of items) {
+  const day = toUtcDay(item.publishedAt);
+  byDay.set(day, [...(byDay.get(day) ?? []), item]);
+}
+const days = [...byDay.entries()];
 ---
 
 <BaseLayout
   title="Related news — Is Poland Safe Now?"
-  description="Recent headlines related to Poland's regional security situation, collected from public news portals as part of Is Poland Safe Now?'s regional classification pipeline."
+  description="Headlines from the last 8 days about Poland's security situation — the Russia-Ukraine war and its impact on Poland, Belarus border activity, Kaliningrad, and airspace incidents — collected from public news portals."
   path="/news"
 >
   <SiteHeader />
@@ -20,37 +29,52 @@ const newsHeadlines = allHeadlines.filter((item) => isRussiaUkraineRelated(item.
     <div>
       <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Related news</h1>
       <p class="mt-2 text-slate-600 dark:text-slate-300">
-        Recent headlines related to Poland's regional security situation, drawn from the same public news portals
-        used to classify Poland's regions (see <a class="underline" href="/methodology">methodology</a>). Links open
-        in a new tab.
+        Headlines from the last {DEFAULT_LOOKBACK_DAYS} days about Poland's security situation — the Russia-Ukraine war
+        and how it affects Poland, Belarus border activity, Kaliningrad, and airspace incidents — drawn from the same
+        public news portals used to classify Poland's regions (see <a class="underline" href="/methodology">methodology</a>).
+        Links open in a new tab.
       </p>
     </div>
 
     {
-      newsHeadlines.length === 0 ? (
+      items.length === 0 ? (
         <p class="text-sm italic text-slate-500 dark:text-slate-400" data-testid="news-empty">
-          No related headlines have been collected yet. This list fills in once the classification job (scheduled
-          hourly) has run at least once.
+          No headlines have been collected yet. This list fills in once the news feed has run at least once.
         </p>
       ) : (
-        <ul
-          class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800"
-          data-testid="news-list"
-        >
-          {newsHeadlines.map((item) => (
-            <li class="p-4">
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400"
+        <div class="flex flex-col gap-8" data-testid="news-list">
+          {days.map(([day, dayItems]) => (
+            <section aria-labelledby={`news-day-${day}`}>
+              <h2
+                id={`news-day-${day}`}
+                class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
               >
-                {item.title}
-              </a>
-              {item.sourceName && <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.sourceName}</p>}
-            </li>
+                <time datetime={day}>{formatDayHeading(dayItems[0]!.publishedAt)}</time>
+              </h2>
+              <ul class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800">
+                {dayItems.map((item) => (
+                  <li class="p-4">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400"
+                    >
+                      {item.title}
+                    </a>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      <time datetime={item.publishedAt}>
+                        {new Date(item.publishedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
+                        {" UTC"}
+                      </time>
+                      {item.sourceName && <> · {item.sourceName}</>}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )
     }
 

@@ -14,7 +14,9 @@ Always follow instructions from Polish authorities and RCB.
 Project scaffolding, Cloudflare configuration, Docker-based local
 development, a D1 database foundation, the interactive Poland map, a
 homepage classified by an **hourly scheduled job** (`scheduler/`) that
-collects real news and calls TypeSafe AI, plus a public status API and
+calls TypeSafe AI with real headlines as evidence, a **news feed**
+(homepage ticker and `/news`, last 8 days) collected from Google News by
+a GitHub Actions cron into D1, plus a public status API and
 tests/documentation. The main site never calls TypeSafe AI itself — it
 only reads D1 — so traffic has no effect on AI cost. See
 `ARCHITECTURE.md` and `METHODOLOGY.md` for how classification and the
@@ -65,6 +67,7 @@ Requires Node.js 22+.
 ```bash
 npm install
 npx wrangler d1 migrations apply ispolandsafenow-db --local
+npm run news:fetch:local   # optional: seed the last 8 days of headlines
 npm run build
 npm run worker:dev   # wrangler dev on 0.0.0.0:8787, production-parity
 ```
