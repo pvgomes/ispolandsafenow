@@ -32,13 +32,15 @@ export interface ClassificationInput {
 }
 
 /**
- * Boundary between the app and whatever produces regional classifications.
+ * Boundary between the classification pipeline and whatever produces
+ * regional classifications.
  *
  * `TypeSafeAiClassificationService` (`./typesafe-ai-classification-service`)
- * is the live implementation: it calls TypeSafe AI's System One API
- * directly. There is no news-collection pipeline yet, so classifications
- * are based on the model's own knowledge rather than a stored evidence
- * trail — see that file's doc comment for the current limits.
+ * is the live implementation: it collects recent news and calls TypeSafe
+ * AI's System One API with that evidence. It is called by the scheduled
+ * worker (`scheduler/src/index.ts`), roughly once per hour, which persists
+ * the result to D1 — the main site only ever reads that persisted state
+ * (`RegionRepository`), it never calls a `ClassificationService` directly.
  */
 export interface ClassificationService {
   classifyRegions(input: ClassificationInput): Promise<RegionClassification[]>;

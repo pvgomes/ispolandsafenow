@@ -7,26 +7,7 @@ const TYPESAFE_AI_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 const TYPESAFE_AI_MODEL = "jev-latest";
 
 /** Freshness window applied to every classification this service produces. */
-const CLASSIFICATION_TTL_MS = 6 * 60 * 60 * 1000;
-
-/**
- * How long a successful result is reused for the same set of regions
- * before re-collecting news and calling TypeSafe AI again. This is an
- * in-isolate cache only (cleared on cold start) — not the persisted,
- * scheduled cache the real pipeline (`scheduler/README.md`) will provide
- * — but it keeps a burst of page loads/API hits from re-running the news
- * collection and paying for a fresh AI call on every single request.
- */
-const CACHE_TTL_MS = 10 * 60 * 1000;
-
-const resultCache = new Map<string, { at: number; result: readonly RegionClassification[] }>();
-
-function cacheKey(regions: readonly RegionIdentity[]): string {
-  return regions
-    .map((r) => r.code)
-    .sort()
-    .join(",");
-}
+const CLASSIFICATION_TTL_MS = 2 * 60 * 60 * 1000;
 
 interface ChoiceAnswer {
   readonly type: "choice";
@@ -50,9 +31,10 @@ function buildStatePrompt(asOf: string, news: readonly CollectedNewsItem[]): str
     `You are assessing the current regional security-alert exposure across Poland's 16 voivodeships, as of ${asOf}. ` +
     `Below are recent headlines collected from public news portals (mainly Polish, plus some international ` +
     `coverage), covering roughly the last 48 hours:\n\n${newsBlock}\n\n` +
-    `Treat these headlines as your primary evidence. If a region has no relevant headline above and you have no ` +
-    `other strong, current signal for it, answer UNKNOWN rather than guessing GREEN or YELLOW — only use your own ` +
-    `general knowledge to interpret the headlines you were given, not to invent incidents they don't mention.`
+    `Treat these headlines as your primary evidence. Default to GREEN (no elevated regional signal found) for any ` +
+    `region with no relevant headline above and no other strong, current signal — do not invent incidents the ` +
+    `headlines don't mention. Only choose YELLOW or RED when the evidence actually supports an elevated situation ` +
+    `or a confirmed incident for that specific region.`
   );
 }
 
@@ -63,10 +45,9 @@ function buildQuestions(regions: readonly RegionIdentity[]) {
       type: "choice",
       instructions: `Based on the headlines above, what is the current security-alert level for the ${region.nameEn} voivodeship (Polish: ${region.namePl}), Poland?`,
       criteria: {
-        GREEN: "No elevated regional signal found in the evidence.",
-        YELLOW: "An elevated situation requiring attention.",
-        RED: "A serious active warning or confirmed incident.",
-        UNKNOWN: "No reliable, current signal for this region in the evidence provided.",
+        GREEN: "No elevated regional signal found in the evidence — the default when nothing relevant was reported.",
+        YELLOW: "An elevated situation requiring attention, supported by the evidence.",
+        RED: "A serious active warning or confirmed incident, supported by the evidence.",
       },
     };
   }
@@ -97,32 +78,27 @@ function toEvidence(news: readonly CollectedNewsItem[]): ClassificationEvidence[
  * The current, live implementation of `ClassificationService`: collects
  * recent news (`collectRecentNews`) and calls TypeSafe AI's System One
  * API (`jev-latest`) with that evidence, one "choice" question per
- * region.
+ * region. Intended to be called by the scheduled worker
+ * (`scheduler/src/index.ts`), roughly once per hour — not per site
+ * visitor — so the site itself only ever reads the persisted result from
+ * D1 (see `RegionRepository`); it never calls this service directly.
  *
- * This is not the persisted, scheduled pipeline described in
- * `scheduler/README.md` — news is collected fresh per call (subject to
- * the short in-isolate cache above), and nothing is written to
- * `classification_evidence` or `job_runs`. If `apiKey` is missing, or the
- * API call fails or returns something unparseable, every region resolves
- * to UNKNOWN: missing or untrustworthy data must never resolve to GREEN.
+ * The model is only ever offered GREEN/YELLOW/RED — that is its
+ * *assessment* of the evidence, and GREEN is the correct, safe answer
+ * when there is genuinely nothing to report. UNKNOWN is reserved
+ * entirely for this code's own pipeline-failure paths (missing API key,
+ * request failure, non-2xx response, unparseable JSON, a missing or
+ * unrecognized answer for a region) — never for "the model looked and
+ * found nothing," which is GREEN. Missing/untrustworthy *data* must
+ * still never resolve to GREEN; that invariant now lives at the
+ * pipeline-failure boundary instead of in the model's own choices.
  */
 export class TypeSafeAiClassificationService implements ClassificationService {
   constructor(private readonly apiKey: string | undefined) {}
 
-  /** Test-only: clears the shared in-isolate result cache. */
-  static clearCache(): void {
-    resultCache.clear();
-  }
-
   async classifyRegions(input: ClassificationInput): Promise<RegionClassification[]> {
     if (!this.apiKey) {
       return input.regions.map((region) => this.unknownClassification(region, input.asOf, "TYPESAFE_AI_API_KEY is not configured."));
-    }
-
-    const key = cacheKey(input.regions);
-    const cached = resultCache.get(key);
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-      return [...cached.result];
     }
 
     const news = await collectRecentNews(new Date(input.asOf));
@@ -163,39 +139,34 @@ export class TypeSafeAiClassificationService implements ClassificationService {
     }
 
     const expiresAt = new Date(new Date(input.asOf).getTime() + CLASSIFICATION_TTL_MS).toISOString();
-    const result = input.regions.map((region) => {
+    return input.regions.map((region) => {
       const answer = body.answers?.[region.code];
       if (!isChoiceAnswer(answer)) {
         return this.unknownClassification(region, input.asOf, "TypeSafe AI returned no usable answer for this region.");
       }
 
-      const recognized = isAlertLevel(answer.choice);
+      if (!isAlertLevel(answer.choice) || answer.choice === "UNKNOWN") {
+        return this.unknownClassification(
+          region,
+          input.asOf,
+          `TypeSafe AI returned an unrecognized choice ("${answer.choice}").`,
+        );
+      }
+
       const status: AlertLevel = toAlertLevel(answer.choice);
       const confidence = typeof answer.confidence === "number" ? answer.confidence : null;
       const confidenceSuffix = confidence !== null ? ` (confidence ${confidence.toFixed(2)})` : "";
-
-      let rationale: string;
-      if (!recognized) {
-        rationale = `TypeSafe AI returned an unrecognized choice ("${answer.choice}").`;
-      } else if (status === "UNKNOWN") {
-        rationale = `TypeSafe AI found no reliable, current signal for this region in the collected headlines${confidenceSuffix}.`;
-      } else {
-        rationale = `TypeSafe AI (model ${TYPESAFE_AI_MODEL}) classification from collected headlines${confidenceSuffix}.`;
-      }
 
       return {
         regionCode: region.code,
         status,
         confidence,
-        rationale,
+        rationale: `TypeSafe AI (model ${TYPESAFE_AI_MODEL}) classification from collected headlines${confidenceSuffix}.`,
         classifiedAt: input.asOf,
         expiresAt,
         evidence,
       };
     });
-
-    resultCache.set(key, { at: Date.now(), result });
-    return result;
   }
 
   private unknownClassification(region: RegionIdentity, asOf: string, rationale: string): RegionClassification {

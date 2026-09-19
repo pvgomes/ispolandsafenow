@@ -4,7 +4,6 @@ import { APP_MODE } from "../../domain/app-mode";
 import type { AlertLevel } from "../../domain/alert-level";
 import { summarizeNational } from "../../domain/national-summary";
 import { RegionRepository } from "../../repositories/region-repository";
-import { RegionStatusService } from "../../services/region-status-service";
 
 export const prerender = false;
 
@@ -17,8 +16,9 @@ export interface StatusPayload {
 }
 
 export async function buildStatusPayload(db: D1Database): Promise<StatusPayload> {
-  const identities = await new RegionRepository(db).listAll();
-  const regions = await new RegionStatusService().getRegionsWithStatus(identities);
+  // Reads the persisted result of the hourly scheduled job — no
+  // per-request TypeSafe AI call, so this scales at a flat cost.
+  const regions = await new RegionRepository(db).listAll();
   const summary = summarizeNational(regions);
   return {
     mode: APP_MODE,

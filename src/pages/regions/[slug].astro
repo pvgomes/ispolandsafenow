@@ -4,18 +4,18 @@ import SiteHeader from "../../components/SiteHeader.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
 import { ALERT_LEVEL_PRESENTATION } from "../../domain/alert-level";
 import { RegionRepository } from "../../repositories/region-repository";
-import { RegionStatusService } from "../../services/region-status-service";
 import { env } from "cloudflare:workers";
 
 const { slug } = Astro.params;
 const regionRepository = new RegionRepository(env.DB);
-const identity = slug ? await regionRepository.findBySlug(slug) : null;
+// findBySlug already returns the persisted status from the hourly
+// scheduled job (scheduler/src/index.ts) — no live classification call.
+const region = slug ? await regionRepository.findBySlug(slug) : null;
 
-if (!identity) {
+if (!region) {
   Astro.response.status = 404;
 }
 
-const region = identity ? (await new RegionStatusService().getRegionsWithStatus([identity]))[0] : null;
 const presentation = region ? ALERT_LEVEL_PRESENTATION[region.currentStatus] : null;
 
 const pageTitle = region

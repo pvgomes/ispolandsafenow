@@ -1,4 +1,5 @@
 import { toAlertLevel } from "../domain/alert-level";
+import { resolveEffectiveStatus } from "../domain/region";
 import type { RegionWithStatus } from "../domain/region";
 
 interface RegionRow {
@@ -12,14 +13,21 @@ interface RegionRow {
 }
 
 function rowToRegion(row: RegionRow): RegionWithStatus {
+  const status = {
+    currentStatus: toAlertLevel(row.current_status),
+    lastClassifiedAt: row.last_classified_at,
+    statusExpiresAt: row.status_expires_at,
+  };
   return {
     code: row.code,
     slug: row.slug,
     namePl: row.name_pl,
     nameEn: row.name_en,
-    currentStatus: toAlertLevel(row.current_status),
-    lastClassifiedAt: row.last_classified_at,
-    statusExpiresAt: row.status_expires_at,
+    // A stale/expired classification (e.g. the hourly scheduler missed a
+    // run or two) resolves back to UNKNOWN here rather than showing a
+    // frozen, possibly-outdated status indefinitely.
+    ...status,
+    currentStatus: resolveEffectiveStatus(status),
   };
 }
 

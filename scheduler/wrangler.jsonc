@@ -1,0 +1,28 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "ispolandsafenow-scheduler",
+  "main": "./src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Hourly. See src/index.ts — each run collects news, calls TypeSafe AI
+  // once for all 16 regions, and writes the result to D1. The main site
+  // Worker never calls TypeSafe AI itself; it only reads what this job
+  // writes, which is what keeps per-visitor cost flat regardless of
+  // traffic (see ARCHITECTURE.md).
+  "triggers": {
+    "crons": ["0 * * * *"]
+  },
+  // Same database as the main app (same database_id as the root
+  // wrangler.jsonc) — this worker writes, the site Worker only reads.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ispolandsafenow-db",
+      "database_id": "e5ab6184-ce68-4a94-bccc-0d2487a70b1c",
+      "migrations_dir": "../migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

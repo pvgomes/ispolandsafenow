@@ -22,7 +22,6 @@ function stubFetch(typeSafeAiHandler: (init: RequestInit) => Response, rssBody: 
 describe("TypeSafeAiClassificationService", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    TypeSafeAiClassificationService.clearCache();
   });
 
   it("resolves every region to UNKNOWN and makes no network call when no API key is configured", async () => {
@@ -98,7 +97,7 @@ describe("TypeSafeAiClassificationService", () => {
     expect(result[0]?.status).toBe("UNKNOWN");
   });
 
-  it("resolves to UNKNOWN when TypeSafe AI itself answers UNKNOWN", async () => {
+  it("resolves to UNKNOWN when TypeSafe AI itself answers UNKNOWN (not an AI-selectable choice)", async () => {
     stubFetch(
       () =>
         new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "UNKNOWN" } } }), {
@@ -110,10 +109,38 @@ describe("TypeSafeAiClassificationService", () => {
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("UNKNOWN");
-    expect(result[0]?.rationale).toMatch(/no reliable, current signal/i);
   });
 
-  it("reuses a cached result for the same region set within the cache TTL", async () => {
+  it("resolves to UNKNOWN when TypeSafe AI returns a choice outside GREEN/YELLOW/RED", async () => {
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "ORANGE" } } }), {
+          status: 200,
+        }),
+    );
+
+    const service = new TypeSafeAiClassificationService("test-key");
+    const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
+
+    expect(result[0]?.status).toBe("UNKNOWN");
+  });
+
+  it("accepts GREEN as a normal, evidence-based classification (not a failure)", async () => {
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "GREEN" } } }), {
+          status: 200,
+        }),
+    );
+
+    const service = new TypeSafeAiClassificationService("test-key");
+    const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
+
+    expect(result[0]?.status).toBe("GREEN");
+    expect(result[0]?.expiresAt).not.toBeNull();
+  });
+
+  it("only offers GREEN/YELLOW/RED as AI-selectable criteria, not UNKNOWN", async () => {
     const fetchSpy = stubFetch(
       () =>
         new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "GREEN" } } }), {
@@ -123,10 +150,10 @@ describe("TypeSafeAiClassificationService", () => {
 
     const service = new TypeSafeAiClassificationService("test-key");
     await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
-    const callsAfterFirst = fetchSpy.mock.calls.length;
 
-    await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:05:00.000Z" });
-
-    expect(fetchSpy.mock.calls.length).toBe(callsAfterFirst);
+    const typeSafeAiCall = fetchSpy.mock.calls.find((call) => call[0] === "https://api.typesafe.ai/v1/systemone");
+    const body = JSON.parse((typeSafeAiCall?.[1] as RequestInit).body as string);
+    const criteria = body.questions["PL-14"].criteria;
+    expect(Object.keys(criteria).sort()).toEqual(["GREEN", "RED", "YELLOW"]);
   });
 });

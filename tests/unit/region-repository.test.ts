@@ -37,4 +37,26 @@ describe("RegionRepository", () => {
     const regions = await repo.listAll();
     expect(regions[0]?.currentStatus).toBe("UNKNOWN");
   });
+
+  it("resolves a stale (expired) classification to UNKNOWN rather than showing a frozen status", async () => {
+    const rows = buildSeededRows();
+    rows[0]!.current_status = "RED";
+    rows[0]!.last_classified_at = "2020-01-01T00:00:00.000Z";
+    rows[0]!.status_expires_at = "2020-01-01T02:00:00.000Z"; // long expired
+    const repo = new RegionRepository(new FakeD1Database(rows) as never);
+    const regions = await repo.listAll();
+    // A missed scheduler run (see scheduler/src/index.ts) must never leave
+    // an old RED/YELLOW/GREEN showing indefinitely as if still current.
+    expect(regions[0]?.currentStatus).toBe("UNKNOWN");
+  });
+
+  it("keeps a fresh, non-expired classification as-is", async () => {
+    const rows = buildSeededRows();
+    rows[0]!.current_status = "RED";
+    rows[0]!.last_classified_at = new Date().toISOString();
+    rows[0]!.status_expires_at = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const repo = new RegionRepository(new FakeD1Database(rows) as never);
+    const regions = await repo.listAll();
+    expect(regions[0]?.currentStatus).toBe("RED");
+  });
 });

@@ -16,7 +16,11 @@
     "test:watch": "vitest",
     "db:migrate:local": "wrangler d1 migrations apply ispolandsafenow-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply ispolandsafenow-db --remote",
-    "map:convert": "node scripts/convert-map.mjs"
+    "map:convert": "node scripts/convert-map.mjs",
+    "scheduler:deploy": "wrangler deploy --config scheduler/wrangler.jsonc",
+    "scheduler:secret": "wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc",
+    "scheduler:tail": "wrangler tail --config scheduler/wrangler.jsonc",
+    "scheduler:trigger": "wrangler dev --config scheduler/wrangler.jsonc --test-scheduled"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.2",

@@ -3,7 +3,6 @@ import { env } from "cloudflare:workers";
 import { APP_MODE } from "../../domain/app-mode";
 import type { RegionWithStatus } from "../../domain/region";
 import { RegionRepository } from "../../repositories/region-repository";
-import { RegionStatusService } from "../../services/region-status-service";
 
 export const prerender = false;
 
@@ -22,8 +21,9 @@ export interface RegionsPayload {
 }
 
 export async function buildRegionsPayload(db: D1Database): Promise<RegionsPayload> {
-  const identities = await new RegionRepository(db).listAll();
-  const regions = await new RegionStatusService().getRegionsWithStatus(identities);
+  // Reads the persisted result of the hourly scheduled job — no
+  // per-request TypeSafe AI call, so this scales at a flat cost.
+  const regions = await new RegionRepository(db).listAll();
   return {
     mode: APP_MODE,
     generatedAt: new Date().toISOString(),
