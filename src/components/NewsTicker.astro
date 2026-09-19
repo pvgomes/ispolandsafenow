@@ -1,0 +1,75 @@
+---
+import type { RecentHeadline } from "../domain/dedupe-headlines";
+
+export interface Props {
+  headlines: RecentHeadline[];
+}
+
+const { headlines } = Astro.props;
+---
+
+{
+  headlines.length === 0 ? (
+    <p class="text-sm italic text-slate-500" data-testid="news-ticker-empty">
+      Headlines will appear here once the classification job has collected recent news.
+    </p>
+  ) : (
+    <div class="relative min-h-[1.75rem]" data-news-ticker data-testid="news-ticker">
+      <ul class="list-none">
+        {headlines.map((item, index) => (
+          <li hidden={index !== 0} data-ticker-item class="text-base text-slate-700">
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+            >
+              {item.title}
+            </a>
+            {item.sourceName && <span class="ml-2 text-sm text-slate-400">— {item.sourceName}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+<script>
+  // Auto-rotates the news ticker every 8s. Plain vanilla JS, not a
+  // framework island — this is passive display, not interactive, so it
+  // doesn't need hydration (see ARCHITECTURE.md: the map is the only
+  // client-hydrated component on this page).
+  const ROTATE_MS = 8000;
+
+  function initTicker(ticker: HTMLElement) {
+    const items = Array.from(ticker.querySelectorAll<HTMLElement>("[data-ticker-item]"));
+    if (items.length <= 1) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let index = 0;
+    let timer: number | undefined;
+
+    function show(next: number) {
+      items[index]?.setAttribute("hidden", "");
+      index = next;
+      items[index]?.removeAttribute("hidden");
+    }
+
+    function start() {
+      timer = window.setInterval(() => show((index + 1) % items.length), ROTATE_MS);
+    }
+    function stop() {
+      if (timer !== undefined) window.clearInterval(timer);
+    }
+
+    start();
+    // Pause on hover/focus so a visitor can actually read and click a
+    // headline before it rotates away.
+    ticker.addEventListener("mouseenter", stop);
+    ticker.addEventListener("mouseleave", start);
+    ticker.addEventListener("focusin", stop);
+    ticker.addEventListener("focusout", start);
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-news-ticker]").forEach(initTicker);
+</script>

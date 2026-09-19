@@ -7,9 +7,11 @@ import Legend from "../components/Legend.astro";
 import PlaceholderSection from "../components/PlaceholderSection.astro";
 import EmergencyGuidance from "../components/EmergencyGuidance.astro";
 import PolandMap from "../components/PolandMap";
+import NewsTicker from "../components/NewsTicker.astro";
 import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
 import { parseMapSvg } from "../domain/parse-map-svg";
 import { RegionRepository } from "../repositories/region-repository";
+import { NewsRepository } from "../repositories/news-repository";
 import { summarizeNational } from "../domain/national-summary";
 import { env } from "cloudflare:workers";
 
@@ -18,6 +20,7 @@ const regionRepository = new RegionRepository(env.DB);
 // (scheduler/src/index.ts) — the site never calls TypeSafe AI itself, so
 // this scales to any amount of traffic at a flat cost.
 const regions = await regionRepository.listAll();
+const headlines = await new NewsRepository(env.DB).listRecentHeadlines(8);
 const nationalSummary = summarizeNational(regions);
 const { viewBox, paths } = parseMapSvg(mapSvgSource);
 const classifiedTimestamps = regions.map((r) => r.lastClassifiedAt).filter((t): t is string => t !== null);
@@ -47,8 +50,15 @@ const datasetJsonLd = {
   <SiteHeader />
 
   <main id="main-content" class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
-    <section>
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Is Poland Safe Now?</h1>
+    <h1 class="sr-only">Is Poland Safe Now?</h1>
+
+    <section aria-labelledby="news-ticker-heading">
+      <h2 id="news-ticker-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        Latest headlines
+      </h2>
+      <div class="mt-2">
+        <NewsTicker headlines={headlines} />
+      </div>
     </section>
 
     <NationalStatusCard summary={nationalSummary} lastUpdated={lastUpdated} />
