@@ -3,6 +3,8 @@ import { env } from "cloudflare:workers";
 import { APP_MODE } from "../../domain/app-mode";
 import type { RegionWithStatus } from "../../domain/region";
 import { RegionRepository } from "../../repositories/region-repository";
+import { MAJOR_CITIES } from "../../data/cities";
+import { capitalOfRegion, citiesForRegion } from "../../domain/city";
 
 export const prerender = false;
 
@@ -14,6 +16,10 @@ export interface RegionsPayload {
     slug: string;
     namePl: string;
     nameEn: string;
+    /** Seat of the voivodeship, e.g. "Warsaw" for Mazowieckie. */
+    capital: string | null;
+    /** Best-known cities, capital first — helps map a city name to its region. */
+    majorCities: string[];
     status: RegionWithStatus["currentStatus"];
     lastClassifiedAt: string | null;
     statusExpiresAt: string | null;
@@ -32,6 +38,8 @@ export async function buildRegionsPayload(db: D1Database): Promise<RegionsPayloa
       slug: region.slug,
       namePl: region.namePl,
       nameEn: region.nameEn,
+      capital: capitalOfRegion(MAJOR_CITIES, region.slug)?.name ?? null,
+      majorCities: citiesForRegion(MAJOR_CITIES, region.slug).map((city) => city.name),
       status: region.currentStatus,
       lastClassifiedAt: region.lastClassifiedAt,
       statusExpiresAt: region.statusExpiresAt,

@@ -28,10 +28,23 @@ is published as open public-sector information under Polish law.
    - maps each feature's Polish name to our canonical region record (ISO
      3166-2:PL code, English-compatible slug, Polish name), and
    - writes one `<path>` per region to `src/assets/maps/poland-voivodeships.svg`,
-     each carrying `data-code`, `data-slug`, and `data-name` attributes.
+     each carrying `data-code`, `data-slug`, and `data-name` attributes,
+     and writes the projection constants (`data-lon-min`, `data-lat-max`,
+     `data-cos-lat`, `data-scale`) onto the `<svg>` root so point features
+     can be placed at runtime with the same projection.
 4. Committed the generated SVG. **Production never re-fetches or
    regenerates this file** — `npm run map:convert` is a development-time
    tool only, run again solely if the source data needs to be refreshed.
+
+## City markers and search (`src/data/cities.ts`)
+
+The "Find your city" search and the city labels on the map use a small,
+hand-maintained list of the best-known cities in each voivodeship
+(capital first). Coordinates are approximate city-centre WGS84 positions
+from general reference knowledge — accurate to well under a kilometre,
+which is far finer than a country-scale map can show. They are projected
+at render time with the constants embedded in the SVG, so they always line
+up with the boundaries.
 
 **Attribution:** boundary geometry © GUGiK (Główny Urząd Geodezji i
 Kartografii), redistributed as GeoJSON by `ppatrzyk/polska-geojson` (MIT

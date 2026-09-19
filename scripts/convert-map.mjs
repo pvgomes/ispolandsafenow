@@ -103,7 +103,18 @@ function main() {
     )
     .join("\n");
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH.toFixed(2)} ${height.toFixed(2)}" role="group">\n${paths}\n</svg>\n`;
+  // The projection constants are embedded on the root so that runtime code
+  // (src/domain/parse-map-svg.ts) can place point features such as city
+  // markers from plain WGS84 lat/lon using exactly the same projection as
+  // the boundary paths, without duplicating this math.
+  const projectionAttrs = [
+    `data-lon-min="${lonMin}"`,
+    `data-lat-max="${latMax}"`,
+    `data-cos-lat="${cosLat}"`,
+    `data-scale="${scale}"`,
+  ].join(" ");
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH.toFixed(2)} ${height.toFixed(2)}" ${projectionAttrs} role="group">\n${paths}\n</svg>\n`;
 
   writeFileSync(OUTPUT, svg, "utf-8");
   console.log(`Wrote ${entries.length} region paths to ${path.relative(process.cwd(), OUTPUT)}`);

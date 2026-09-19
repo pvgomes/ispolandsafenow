@@ -1,11 +1,17 @@
 import type { APIRoute } from "astro";
 import { REGIONS } from "../data/regions";
+import { MAJOR_CITIES } from "../data/cities";
+import { citiesForRegion } from "../domain/city";
 
 export const prerender = false;
 
 export const GET: APIRoute = ({ site }) => {
   const base = site?.toString().replace(/\/$/, "") ?? "";
-  const regionLines = REGIONS.map((r) => `- [${r.namePl}](${base}/regions/${r.slug})`).join("\n");
+  const regionLines = REGIONS.map((r) => {
+    const cities = citiesForRegion(MAJOR_CITIES, r.slug).map((c) => c.name);
+    const cityNote = cities.length > 0 ? ` — main cities: ${cities.join(", ")}` : "";
+    return `- [${r.namePl}](${base}/regions/${r.slug})${cityNote}`;
+  }).join("\n");
 
   const body = `# Is Poland Safe Now?
 
@@ -24,9 +30,11 @@ Current data mode: live. An hourly scheduled job collects news and calls TypeSaf
 
 - [GET /api/health](${base}/api/health) — service and database health
 - [GET /api/status](${base}/api/status) — national status summary
-- [GET /api/regions](${base}/api/regions) — per-region status list
+- [GET /api/regions](${base}/api/regions) — per-region status list, including each region's capital and major cities
 
 ## Regions
+
+Each voivodeship is listed with its best-known cities so a city name (e.g. Kraków, Gdańsk, Zakopane) can be mapped to the right regional status.
 
 ${regionLines}
 `;

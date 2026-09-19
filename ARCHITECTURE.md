@@ -78,7 +78,8 @@ src/
                    AI-backed implementation, news collection,
                    missing-data-resolves-to-UNKNOWN logic. No Astro
                    imports (it does call `fetch`).
-  data/            Static reference data: the 16 REGIONS.
+  data/            Static reference data: the 16 REGIONS and MAJOR_CITIES
+                   (best-known cities per region, with lat/lon for the map).
   repositories/    D1 access, prepared statements only — reads for the
                    site (RegionRepository), writes for the scheduler
                    (ClassificationWriter).

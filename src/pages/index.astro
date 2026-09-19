@@ -10,7 +10,8 @@ import PolandMap from "../components/PolandMap";
 import NewsTicker from "../components/NewsTicker.astro";
 import LiveDot from "../components/LiveDot.astro";
 import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
-import { parseMapSvg } from "../domain/parse-map-svg";
+import { parseMapSvg, projectPoint } from "../domain/parse-map-svg";
+import { MAJOR_CITIES } from "../data/cities";
 import { RegionRepository } from "../repositories/region-repository";
 import { NewsRepository } from "../repositories/news-repository";
 import { summarizeNational } from "../domain/national-summary";
@@ -23,7 +24,8 @@ const regionRepository = new RegionRepository(env.DB);
 const regions = await regionRepository.listAll();
 const headlines = await new NewsRepository(env.DB).listLatest(10);
 const nationalSummary = summarizeNational(regions);
-const { viewBox, paths } = parseMapSvg(mapSvgSource);
+const { viewBox, paths, projection } = parseMapSvg(mapSvgSource);
+const cities = MAJOR_CITIES.map((city) => ({ ...city, ...projectPoint(projection, city.lat, city.lon) }));
 const classifiedTimestamps = regions.map((r) => r.lastClassifiedAt).filter((t): t is string => t !== null);
 const lastUpdated = classifiedTimestamps.length > 0 ? classifiedTimestamps.sort().at(-1)! : new Date().toISOString();
 
@@ -71,13 +73,14 @@ const datasetJsonLd = {
     <section aria-labelledby="map-heading">
       <h2 id="map-heading" class="text-xl font-semibold text-slate-900 dark:text-slate-100">Regional map</h2>
       <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Select a voivodeship to see its status. Works with mouse, touch, and keyboard (Tab, then Enter or Space).
+        Not sure which voivodeship you are in? Search for a city below, or use the city labels on the map. Select a
+        voivodeship to see its status. Works with mouse, touch, and keyboard (Tab, then Enter or Space).
       </p>
       <div class="mt-4">
         <Legend />
       </div>
       <div class="mt-4">
-        <PolandMap client:load viewBox={viewBox} paths={paths} regions={regions} />
+        <PolandMap client:load viewBox={viewBox} paths={paths} regions={regions} cities={cities} />
       </div>
     </section>
 

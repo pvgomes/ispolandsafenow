@@ -4,6 +4,8 @@ import SiteHeader from "../../components/SiteHeader.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
 import { ALERT_LEVEL_PRESENTATION } from "../../domain/alert-level";
 import { RegionRepository } from "../../repositories/region-repository";
+import { MAJOR_CITIES } from "../../data/cities";
+import { capitalOfRegion, citiesForRegion, formatCityList } from "../../domain/city";
 import { env } from "cloudflare:workers";
 
 const { slug } = Astro.params;
@@ -17,13 +19,17 @@ if (!region) {
 }
 
 const presentation = region ? ALERT_LEVEL_PRESENTATION[region.currentStatus] : null;
+const cities = region ? citiesForRegion(MAJOR_CITIES, region.slug) : [];
+const capital = region ? capitalOfRegion(MAJOR_CITIES, region.slug) : undefined;
+const cityNames = cities.map((city) => city.name);
 
 const pageTitle = region
-  ? `${region.namePl} security status — Is Poland Safe Now?`
+  ? `${region.namePl}${capital ? ` (${capital.name})` : ""} security status — Is Poland Safe Now?`
   : "Region not found — Is Poland Safe Now?";
+const cityPhrase = cityNames.length > 0 ? `, home to ${cityNames.slice(0, 3).join(", ")}` : "";
 const pageDescription =
   region && presentation
-    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships: ${presentation.label} — ${presentation.description}`
+    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships${cityPhrase}: ${presentation.label} — ${presentation.description}`
     : "This voivodeship could not be found.";
 
 const placeJsonLd = region
@@ -34,6 +40,7 @@ const placeJsonLd = region
         name: region.namePl,
         alternateName: region.nameEn,
         containedInPlace: { "@type": "Country", name: "Poland" },
+        containsPlace: cities.map((city) => ({ "@type": "City", name: city.name })),
         additionalProperty: {
           "@type": "PropertyValue",
           name: "AlertLevel",
@@ -66,6 +73,12 @@ const placeJsonLd = region
             <p class="text-slate-500 dark:text-slate-400">
               {region.nameEn} · Voivodeship code {region.code}
             </p>
+            {cities.length > 0 && (
+              <p class="mt-2 text-sm text-slate-600 dark:text-slate-300" data-testid="region-cities">
+                <span class="font-medium text-slate-700 dark:text-slate-200">Main cities: </span>
+                {formatCityList(cities)}
+              </p>
+            )}
           </div>
 
           <section

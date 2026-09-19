@@ -85,7 +85,8 @@ src/
                    summary, the ClassificationService interface, the
                    TypeSafe AI-backed implementation, news collection).
                    No framework imports (it does call fetch).
-  data/           The 16 REGIONS.
+  data/           The 16 REGIONS and MAJOR_CITIES (well-known cities per
+                   region, shown on the map and searchable).
   repositories/   D1 access via prepared statements. No ORM. Reads for
                    the site, writes (ClassificationWriter) for the
                    scheduler.
