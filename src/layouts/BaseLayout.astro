@@ -28,6 +28,20 @@ const websiteJsonLd = {
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google Tag Manager -->
+    <script is:inline>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-NTPWBMH5");
+    </script>
+    <!-- End Google Tag Manager -->
     <script is:inline>
       (function () {
         try {
@@ -63,6 +77,15 @@ const websiteJsonLd = {
     {structuredData.map((entry) => <script type="application/ld+json" set:html={JSON.stringify(entry)} />)}
   </head>
   <body class="bg-white text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript
+      ><iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-NTPWBMH5"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"></iframe
+    ></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <a
       href="#main-content"
       class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white dark:focus:bg-slate-100 dark:focus:text-slate-900"
