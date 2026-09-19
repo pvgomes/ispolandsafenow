@@ -253,7 +253,7 @@ export default function PolandMap({ viewBox, paths, regions, cities = [] }: Pola
                       x={city.x + offset}
                       y={city.y + (city.labelDy ?? 4)}
                       textAnchor={anchor}
-                      className={`${textClass} fill-slate-900 stroke-white/90 stroke-[3] [paint-order:stroke] dark:fill-white dark:stroke-slate-900/90`}
+                      className={`${textClass} fill-slate-900 drop-shadow-[0_0_2px_rgba(255,255,255,0.95)] dark:fill-white dark:drop-shadow-[0_0_2px_rgba(15,23,42,0.95)]`}
                       style={{ fontFamily: "inherit" }}
                     >
                       {label}
