@@ -35,13 +35,16 @@ This is what keeps the site from sitting empty right after a fresh
 deploy or a long gap.
 
 It needs its own `TYPESAFE_AI_API_KEY` secret (separate from any secret on
-the main Worker — Cloudflare secrets are per-Worker). If a
-`TYPESAFE_AI_API_KEY` GitHub Actions secret exists, the workflow sets it on
-the scheduler automatically on every deploy; if not, that step is skipped
-and the scheduler keeps whatever value (if any) was set on it directly
-before. Without it configured one way or another, the scheduler still runs
-every hour, but every region resolves to `UNKNOWN` (see `METHODOLOGY.md`).
-To set it directly instead of via a GitHub secret:
+the main Worker — Cloudflare secrets are per-Worker; the key that was set
+directly on the main Worker early on, before the scheduler existed as a
+separate Worker, never carried over). A `TYPESAFE_AI_API_KEY` GitHub
+Actions secret is now configured, so the workflow sets it on the
+scheduler automatically on every deploy — if it's ever removed, that step
+is simply skipped and the scheduler keeps whatever value (if any) was set
+on it directly before. Without it configured one way or another, the
+scheduler still runs every hour, but every region resolves to `UNKNOWN`
+(see `METHODOLOGY.md`). To set it directly instead of via a GitHub
+secret:
 
 ```bash
 npm run scheduler:secret   # npx wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc
