@@ -12,6 +12,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HAS_TYPESAFE_AI_KEY: ${{ secrets.TYPESAFE_AI_API_KEY != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,7 +61,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Set the TypeSafe AI key on the scheduler (if configured)
-        if: ${{ secrets.TYPESAFE_AI_API_KEY != '' }}
+        if: ${{ env.HAS_TYPESAFE_AI_KEY == 'true' }}
         run: printf '%s' "$TYPESAFE_AI_API_KEY" | npx wrangler secret put TYPESAFE_AI_API_KEY --config scheduler/wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
