@@ -11,11 +11,12 @@ export const GET: APIRoute = ({ site }) => {
 
 > Independent, AI-assisted tracker of regional security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, airspace violations, drone or missile incidents, RCB warnings, and border/airport/transport disruptions. This is not an official warning system.
 
-Current data mode: live. Classifications come from TypeSafe AI; there is no news-collection pipeline yet — see /methodology.
+Current data mode: live. An hourly scheduled job collects news and calls TypeSafe AI to classify each region — see /methodology.
 
 ## Key pages
 
 - [Homepage](${base}/)
+- [Russia-Ukraine war news](${base}/news)
 - [Methodology](${base}/methodology)
 - [About](${base}/about)
 

@@ -3,7 +3,7 @@ import { REGIONS } from "../data/regions";
 
 export const prerender = false;
 
-const STATIC_PATHS = ["/", "/methodology", "/about"];
+const STATIC_PATHS = ["/", "/methodology", "/about", "/news"];
 
 export const GET: APIRoute = ({ site }) => {
   const base = site?.toString().replace(/\/$/, "") ?? "";

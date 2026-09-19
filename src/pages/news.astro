@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import { NewsRepository } from "../repositories/news-repository";
+import { isRussiaWarRelated } from "../domain/news-topic";
+import { env } from "cloudflare:workers";
+
+const allHeadlines = await new NewsRepository(env.DB).listRecentHeadlines(50);
+const warHeadlines = allHeadlines.filter((item) => isRussiaWarRelated(item.title));
+---
+
+<BaseLayout
+  title="Russia-Ukraine war news — Is Poland Safe Now?"
+  description="Recent headlines related to the Russia-Ukraine war, collected from public news portals as part of Is Poland Safe Now?'s regional classification pipeline."
+  path="/news"
+>
+  <SiteHeader />
+  <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Russia-Ukraine war news</h1>
+      <p class="mt-2 text-slate-600">
+        Recent headlines related to the Russia-Ukraine war, drawn from the same public news portals used to classify
+        Poland's regions (see <a class="underline" href="/methodology">methodology</a>). Links open in a new tab.
+      </p>
+    </div>
+
+    {
+      warHeadlines.length === 0 ? (
+        <p class="text-sm italic text-slate-500" data-testid="war-news-empty">
+          No war-related headlines have been collected yet. This list fills in once the classification job
+          (scheduled hourly) has run at least once.
+        </p>
+      ) : (
+        <ul class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white" data-testid="war-news-list">
+          {warHeadlines.map((item) => (
+            <li class="p-4">
+              <a
+                href={item.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+              >
+                {item.title}
+              </a>
+              {item.sourceName && <p class="mt-1 text-sm text-slate-500">{item.sourceName}</p>}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <p class="text-sm text-slate-500">
+      <a class="underline underline-offset-2" href="/">
+        &larr; Back to the map
+      </a>
+    </p>
+  </main>
+  <SiteFooter />
+</BaseLayout>
