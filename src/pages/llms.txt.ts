@@ -16,7 +16,7 @@ Current data mode: live. An hourly scheduled job collects news and calls TypeSaf
 ## Key pages
 
 - [Homepage](${base}/)
-- [Russia-Ukraine war news](${base}/news)
+- [Russia & Ukraine news](${base}/news)
 - [Methodology](${base}/methodology)
 - [About](${base}/about)
 
