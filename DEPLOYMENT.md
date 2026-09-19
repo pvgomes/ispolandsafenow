@@ -91,6 +91,32 @@ translated headline, well inside the Workers AI free allowance.
 test a scheduler-only change before pushing), it's just no longer the only
 way it gets deployed.
 
+## Search engines (Google Search Console)
+
+The site publishes `https://ispolandsafenow.com/sitemap.xml` (the older
+`/sitemap-index.xml` URL serves the same document) and links it from
+`/robots.txt`. It is built from D1 on request, cached for an hour, and
+lists `/`, `/news`, every `/regions/<slug>` page, `/methodology` and
+`/about`; `lastmod` comes from the latest classification / newest
+headline, never from the current time, so Google will keep trusting it.
+
+One-time steps to get the site indexed and monitored:
+
+1. Open https://search.google.com/search-console and click
+   **Add property** → **Domain** → `ispolandsafenow.com`.
+2. Google shows a TXT record. In the Cloudflare dashboard →
+   `ispolandsafenow.com` → **DNS** → **Add record**: type `TXT`, name `@`,
+   content = the value Google gave you. Save, go back to Google and click
+   **Verify** (may take a few minutes).
+3. In Search Console: **Sitemaps** (left menu) → enter `sitemap.xml` →
+   **Submit**. It should show *Success* with 20 discovered URLs.
+4. Optionally paste `https://ispolandsafenow.com/` into the URL inspection
+   bar at the top and click **Request indexing** to speed up the first
+   crawl.
+
+Nothing else needs redeploying: the sitemap updates itself as data
+changes.
+
 ## Local vs. remote D1
 
 Local development always uses `--local` (SQLite under `.wrangler/state`,

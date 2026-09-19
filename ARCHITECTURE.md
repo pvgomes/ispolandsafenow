@@ -86,7 +86,7 @@ src/
                    (PolandMap.tsx) — the only client-hydrated code.
   layouts/         Shared HTML shell, meta tags, WebSite JSON-LD.
   pages/           Routes: homepage, region pages, methodology, about,
-                   /api/*, robots.txt, llms.txt, sitemap-index.xml.
+                   /api/*, robots.txt, llms.txt, sitemap.xml.
 scheduler/
   src/index.ts     The hourly Cron Trigger Worker — see scheduler/README.md.
 ```

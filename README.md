@@ -106,8 +106,13 @@ docker/           Compose entrypoint script.
 ## Routes
 
 `/`, `/regions/[slug]`, `/methodology`, `/about`, `/api/health`,
-`/api/status`, `/api/regions`, `/robots.txt`, `/llms.txt`,
-`/sitemap-index.xml`.
+`/api/status`, `/api/regions`, `/api/news`, `/news`, `/robots.txt`,
+`/llms.txt`, `/sitemap.xml` (also served as `/sitemap-index.xml`).
+
+The sitemap is generated from D1 on each request (cached for an hour):
+`lastmod` reflects the latest classification / headline rather than the
+request time, so search engines can trust it. `/api/*` is disallowed in
+`robots.txt`.
 
 Region pages render meaningful, complete HTML with no JavaScript required.
 API responses always include `"mode": "live"` and are always plain D1
