@@ -10,23 +10,23 @@ const { headlines } = Astro.props;
 
 {
   headlines.length === 0 ? (
-    <p class="text-sm italic text-slate-500" data-testid="news-ticker-empty">
+    <p class="text-sm italic text-slate-500 dark:text-slate-400" data-testid="news-ticker-empty">
       Headlines will appear here once the classification job has collected recent news.
     </p>
   ) : (
     <div class="relative min-h-[1.75rem]" data-news-ticker data-testid="news-ticker">
       <ul class="list-none">
         {headlines.map((item, index) => (
-          <li hidden={index !== 0} data-ticker-item class="text-base text-slate-700">
+          <li hidden={index !== 0} data-ticker-item class="text-base text-slate-700 dark:text-slate-300">
             <a
               href={item.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              class="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+              class="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:decoration-slate-600 dark:hover:decoration-slate-400"
             >
               {item.title}
             </a>
-            {item.sourceName && <span class="ml-2 text-sm text-slate-400">— {item.sourceName}</span>}
+            {item.sourceName && <span class="ml-2 text-sm text-slate-400 dark:text-slate-500">— {item.sourceName}</span>}
           </li>
         ))}
       </ul>

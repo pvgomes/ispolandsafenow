@@ -10,11 +10,11 @@ import SiteFooter from "../components/SiteFooter.astro";
   path="/methodology"
 >
   <SiteHeader />
-  <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 text-slate-700">
-    <h1 class="text-3xl font-bold text-slate-900">Methodology</h1>
+  <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 text-slate-700 dark:text-slate-300">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Methodology</h1>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Current phase: live, news-grounded classification</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Current phase: live, news-grounded classification</h2>
       <p class="mt-2">
         Every region's status is produced by <code>TypeSafeAiClassificationService</code>, which first collects
         recent headlines from Polish and international news portals (covering roughly the last 48 hours), then
@@ -27,7 +27,7 @@ import SiteFooter from "../components/SiteFooter.astro";
     </section>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Status levels</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Status levels</h2>
       <ul class="mt-2 list-inside list-disc space-y-1">
         <li><strong>Green</strong> — no elevated regional signal found.</li>
         <li><strong>Yellow</strong> — elevated situation requiring attention.</li>
@@ -40,7 +40,7 @@ import SiteFooter from "../components/SiteFooter.astro";
     </section>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Planned pipeline (not yet implemented)</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Planned pipeline (not yet implemented)</h2>
       <p class="mt-2">
         A future phase will persist collected news and classifications to the database with full evidence trails,
         re-run on a schedule via a Cron Trigger instead of on-demand per request, and broaden collection beyond
@@ -50,7 +50,7 @@ import SiteFooter from "../components/SiteFooter.astro";
     </section>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Map data</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Map data</h2>
       <p class="mt-2">
         Voivodeship boundaries are sourced from Poland's official geospatial registry (GUGiK PRG) and converted to a
         local SVG at development time — see
@@ -62,7 +62,7 @@ import SiteFooter from "../components/SiteFooter.astro";
     </section>
 
     <section>
-      <h2 class="text-xl font-semibold text-slate-900">Limits</h2>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Limits</h2>
       <p class="mt-2">
         This is an independent information service, not an official warning system, and cannot guarantee safety.
         Always follow instructions from Polish authorities and RCB. For emergencies, call 112.

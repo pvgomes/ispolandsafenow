@@ -18,8 +18,8 @@ const newsHeadlines = allHeadlines.filter((item) => isRussiaUkraineRelated(item.
   <SiteHeader />
   <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Related news</h1>
-      <p class="mt-2 text-slate-600">
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Related news</h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-300">
         Recent headlines related to Poland's regional security situation, drawn from the same public news portals
         used to classify Poland's regions (see <a class="underline" href="/methodology">methodology</a>). Links open
         in a new tab.
@@ -28,30 +28,33 @@ const newsHeadlines = allHeadlines.filter((item) => isRussiaUkraineRelated(item.
 
     {
       newsHeadlines.length === 0 ? (
-        <p class="text-sm italic text-slate-500" data-testid="news-empty">
+        <p class="text-sm italic text-slate-500 dark:text-slate-400" data-testid="news-empty">
           No related headlines have been collected yet. This list fills in once the classification job (scheduled
           hourly) has run at least once.
         </p>
       ) : (
-        <ul class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white" data-testid="news-list">
+        <ul
+          class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800"
+          data-testid="news-list"
+        >
           {newsHeadlines.map((item) => (
             <li class="p-4">
               <a
                 href={item.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+                class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400"
               >
                 {item.title}
               </a>
-              {item.sourceName && <p class="mt-1 text-sm text-slate-500">{item.sourceName}</p>}
+              {item.sourceName && <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.sourceName}</p>}
             </li>
           ))}
         </ul>
       )
     }
 
-    <p class="text-sm text-slate-500">
+    <p class="text-sm text-slate-500 dark:text-slate-400">
       <a class="underline underline-offset-2" href="/">
         &larr; Back to the map
       </a>

@@ -28,6 +28,20 @@ const websiteJsonLd = {
 <!doctype html>
 <html lang="en">
   <head>
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var theme =
+            stored === "dark" || stored === "light"
+              ? stored
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          if (theme === "dark") document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
@@ -48,10 +62,10 @@ const websiteJsonLd = {
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
     {structuredData.map((entry) => <script type="application/ld+json" set:html={JSON.stringify(entry)} />)}
   </head>
-  <body class="bg-white text-slate-900 antialiased">
+  <body class="bg-white text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100">
     <a
       href="#main-content"
-      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white dark:focus:bg-slate-100 dark:focus:text-slate-900"
     >
       Skip to main content
     </a>

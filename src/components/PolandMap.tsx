@@ -88,7 +88,7 @@ export default function PolandMap({ viewBox, paths, regions }: PolandMapProps) {
                 tabIndex={0}
                 aria-label={`${path.name}: ${ALERT_LEVEL_PRESENTATION[status].label} — ${ALERT_LEVEL_PRESENTATION[status].description}`}
                 aria-pressed={isSelected}
-                className={`cursor-pointer stroke-slate-700 transition-colors ${FILL_BY_STATUS[status]} ${
+                className={`cursor-pointer stroke-slate-700 transition-colors dark:stroke-slate-400 ${FILL_BY_STATUS[status]} ${
                   isSelected ? "stroke-2" : "stroke-[0.75] hover:opacity-80"
                 }`}
                 onClick={() => selectRegion(path.slug)}
@@ -100,14 +100,14 @@ export default function PolandMap({ viewBox, paths, regions }: PolandMapProps) {
       </div>
 
       <div
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-4 lg:w-1/3"
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-4 lg:w-1/3 dark:border-slate-700 dark:bg-slate-800"
         data-testid="region-details-panel"
         aria-live="polite"
       >
         {selectedRegion ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">{selectedRegion.namePl}</h3>
-            <p className="text-sm text-slate-500">{selectedRegion.nameEn}</p>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{selectedRegion.namePl}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{selectedRegion.nameEn}</p>
             <span
               className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-sm font-medium ${
                 ALERT_LEVEL_PRESENTATION[selectedRegion.currentStatus].badgeClass
@@ -116,28 +116,28 @@ export default function PolandMap({ viewBox, paths, regions }: PolandMapProps) {
             >
               {ALERT_LEVEL_PRESENTATION[selectedRegion.currentStatus].label}
             </span>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               {ALERT_LEVEL_PRESENTATION[selectedRegion.currentStatus].description}
             </p>
-            <dl className="mt-3 space-y-1 text-sm text-slate-500">
+            <dl className="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
               <div>
-                <dt className="inline font-medium text-slate-700">Last classified: </dt>
+                <dt className="inline font-medium text-slate-700 dark:text-slate-300">Last classified: </dt>
                 <dd className="inline">{formatTimestamp(selectedRegion.lastClassifiedAt)}</dd>
               </div>
               <div>
-                <dt className="inline font-medium text-slate-700">Status expires: </dt>
+                <dt className="inline font-medium text-slate-700 dark:text-slate-300">Status expires: </dt>
                 <dd className="inline">{formatTimestamp(selectedRegion.statusExpiresAt)}</dd>
               </div>
             </dl>
             <a
               href={`/regions/${selectedRegion.slug}`}
-              className="mt-3 inline-block text-sm font-medium text-slate-900 underline underline-offset-2"
+              className="mt-3 inline-block text-sm font-medium text-slate-900 underline underline-offset-2 dark:text-slate-100"
             >
               View full region page
             </a>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Select a voivodeship on the map, or tab to it and press Enter, to see its details here.
           </p>
         )}
