@@ -1,0 +1,52 @@
+---
+/**
+ * Small pulsing dot that marks the headline feed as live. Pure CSS
+ * (two keyframe animations, no JS, no images); stops animating under
+ * prefers-reduced-motion and leaves a static dot behind.
+ */
+export interface Props {
+  label?: string;
+}
+const { label = "Live" } = Astro.props;
+---
+
+<span class="live-dot inline-flex items-center gap-1.5 align-middle" data-testid="live-dot">
+  <span class="relative inline-flex h-2 w-2" aria-hidden="true">
+    <span class="live-dot__ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+    <span class="live-dot__core relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+  </span>
+  <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">{label}</span>
+</span>
+
+<style>
+  @keyframes live-ping {
+    75%,
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @keyframes live-glow {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+  .live-dot__ping {
+    animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .live-dot__core {
+    animation: live-glow 1.8s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot__ping {
+      display: none;
+    }
+    .live-dot__core {
+      animation: none;
+    }
+  }
+</style>

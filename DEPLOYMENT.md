@@ -73,6 +73,19 @@ node scripts/fetch-news.ts --dry-run   # print the SQL, write nothing
 
 Re-running is safe: rows are keyed by link (`INSERT OR IGNORE`).
 
+After inserting, the same script translates every headline that still
+lacks an English title (`title_en`, migration 0004) with Workers AI
+(`@cf/meta/llama-3.1-8b-instruct-fast`, via the REST API — see
+`src/domain/headline-translator.ts`), up to 300 per run, newest first.
+This needs the `CLOUDFLARE_API_TOKEN` to carry the **Workers AI: Read**
+permission (Account scope). Without it the step logs a clear HTTP 401/403
+error and fails the run; without credentials at all it is skipped with a
+warning. Either way, nothing is lost — untranslated rows show their
+original title and are picked up by a later run. `--no-translate` skips
+the step; headlines that already look English are never sent to the
+model (`src/domain/headline-language.ts`). Cost is roughly one neuron per
+translated headline, well inside the Workers AI free allowance.
+
 `npm run scheduler:deploy` still works for a manual/local deploy (e.g. to
 test a scheduler-only change before pushing), it's just no longer the only
 way it gets deployed.

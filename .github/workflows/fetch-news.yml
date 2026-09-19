@@ -36,7 +36,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Collect headlines and upsert into D1
+      # Also translates new non-English headlines with Workers AI, so the
+      # token needs "Workers AI: Read" on top of D1 access (see
+      # DEPLOYMENT.md, "News feed").
+      - name: Collect headlines, upsert into D1, translate
         run: node scripts/fetch-news.ts --days=${{ github.event.inputs.days || '8' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

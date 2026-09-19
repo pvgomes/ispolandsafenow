@@ -4,17 +4,18 @@ import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import { NewsRepository } from "../repositories/news-repository";
 import { DEFAULT_LOOKBACK_DAYS } from "../domain/news-collection";
-import { formatDayHeading, toUtcDay } from "../domain/format-news-date";
-import type { NewsItem } from "../domain/news-item";
+import { buildNewsFeedPage, NEWS_PAGE_SIZE, type NewsFeedEntry } from "../domain/news-feed-page";
 import { env } from "cloudflare:workers";
 
+// First page is server-rendered (meaningful HTML, no JS needed); the rest
+// streams in from /api/news as the visitor scrolls — see the script below.
 const since = new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-const items = await new NewsRepository(env.DB).listPublishedSince(since, 300);
+const fetched = await new NewsRepository(env.DB).listPublishedSince(since, NEWS_PAGE_SIZE + 1, 0);
+const page = buildNewsFeedPage(fetched, 0, NEWS_PAGE_SIZE);
 
-const byDay = new Map<string, NewsItem[]>();
-for (const item of items) {
-  const day = toUtcDay(item.publishedAt);
-  byDay.set(day, [...(byDay.get(day) ?? []), item]);
+const byDay = new Map<string, NewsFeedEntry[]>();
+for (const entry of page.items) {
+  byDay.set(entry.day, [...(byDay.get(entry.day) ?? []), entry]);
 }
 const days = [...byDay.entries()];
 ---
@@ -32,48 +33,69 @@ const days = [...byDay.entries()];
         Headlines from the last {DEFAULT_LOOKBACK_DAYS} days about Poland's security situation — the Russia-Ukraine war
         and how it affects Poland, Belarus border activity, Kaliningrad, and airspace incidents — drawn from the same
         public news portals used to classify Poland's regions (see <a class="underline" href="/methodology">methodology</a>).
-        Links open in a new tab.
+        Polish and Ukrainian headlines are shown in English; hover to see the original. Links open in a new tab.
       </p>
     </div>
 
     {
-      items.length === 0 ? (
+      page.items.length === 0 ? (
         <p class="text-sm italic text-slate-500 dark:text-slate-400" data-testid="news-empty">
           No headlines have been collected yet. This list fills in once the news feed has run at least once.
         </p>
       ) : (
-        <div class="flex flex-col gap-8" data-testid="news-list">
-          {days.map(([day, dayItems]) => (
-            <section aria-labelledby={`news-day-${day}`}>
+        <div
+          class="flex flex-col gap-8"
+          data-testid="news-list"
+          data-news-feed
+          data-next-offset={page.nextOffset}
+          data-has-more={page.hasMore ? "true" : "false"}
+        >
+          {days.map(([day, entries]) => (
+            <section aria-labelledby={`news-day-${day}`} data-day={day}>
               <h2
                 id={`news-day-${day}`}
                 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
               >
-                <time datetime={day}>{formatDayHeading(dayItems[0]!.publishedAt)}</time>
+                <time datetime={day}>{entries[0]!.dayHeading}</time>
               </h2>
               <ul class="flex flex-col divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800">
-                {dayItems.map((item) => (
-                  <li class="p-4">
+                {entries.map((entry) => (
+                  <li class="p-4" data-url={entry.url}>
                     <a
-                      href={item.url}
+                      href={entry.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      title={entry.originalTitle ?? undefined}
                       class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400"
                     >
-                      {item.title}
+                      {entry.title}
                     </a>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      <time datetime={item.publishedAt}>
-                        {new Date(item.publishedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
-                        {" UTC"}
-                      </time>
-                      {item.sourceName && <> · {item.sourceName}</>}
+                      <time datetime={entry.publishedAt}>{entry.time}</time>
+                      {entry.sourceName && <> · {entry.sourceName}</>}
                     </p>
                   </li>
                 ))}
               </ul>
             </section>
           ))}
+        </div>
+      )
+    }
+
+    {
+      page.hasMore && (
+        <div class="flex justify-center" data-news-more>
+          <p class="hidden text-sm text-slate-500 dark:text-slate-400" data-news-loading aria-live="polite">
+            Loading more headlines…
+          </p>
+          <a
+            class="text-sm underline underline-offset-2 text-slate-600 dark:text-slate-300"
+            href={`/api/news?offset=${page.nextOffset}`}
+            data-news-more-link
+          >
+            Load more headlines
+          </a>
         </div>
       )
     }
@@ -86,3 +108,117 @@ const days = [...byDay.entries()];
   </main>
   <SiteFooter />
 </BaseLayout>
+
+<script>
+  // Scroll-to-load-more for the feed. Progressive enhancement over the
+  // server-rendered first page: without JS the "Load more" link still
+  // points at the JSON API. Vanilla, ~1 KB, no framework island.
+  interface FeedEntry {
+    url: string;
+    title: string;
+    originalTitle: string | null;
+    sourceName: string | null;
+    publishedAt: string;
+    day: string;
+    dayHeading: string;
+    time: string;
+  }
+  interface FeedPage {
+    items: FeedEntry[];
+    nextOffset: number;
+    hasMore: boolean;
+  }
+
+  function initFeed(feed: HTMLElement) {
+    const moreEl = document.querySelector<HTMLElement>("[data-news-more]");
+    if (!moreEl) return;
+    const more: HTMLElement = moreEl;
+    const link = more.querySelector<HTMLAnchorElement>("[data-news-more-link]");
+    const loading = more.querySelector<HTMLElement>("[data-news-loading]");
+    let nextOffset = Number(feed.dataset.nextOffset ?? "0");
+    let hasMore = feed.dataset.hasMore === "true";
+    let busy = false;
+    const seen = new Set(Array.from(feed.querySelectorAll<HTMLElement>("li[data-url]"), (li) => li.dataset.url));
+
+    function sectionFor(entry: FeedEntry): HTMLUListElement {
+      let section = feed.querySelector<HTMLElement>(`section[data-day="${entry.day}"]`);
+      if (!section) {
+        const tpl = feed.querySelector<HTMLElement>("section[data-day]");
+        if (!tpl) throw new Error("feed has no day section to clone");
+        section = tpl.cloneNode(true) as HTMLElement;
+        section.dataset.day = entry.day;
+        section.setAttribute("aria-labelledby", `news-day-${entry.day}`);
+        const heading = section.querySelector("h2")!;
+        heading.id = `news-day-${entry.day}`;
+        const time = heading.querySelector("time")!;
+        time.setAttribute("datetime", entry.day);
+        time.textContent = entry.dayHeading;
+        section.querySelector("ul")!.replaceChildren();
+        feed.appendChild(section);
+      }
+      return section.querySelector("ul")!;
+    }
+
+    function render(entry: FeedEntry) {
+      const template = feed.querySelector<HTMLLIElement>("li[data-url]")!;
+      const li = template.cloneNode(true) as HTMLLIElement;
+      li.dataset.url = entry.url;
+      const a = li.querySelector("a")!;
+      a.href = entry.url;
+      a.textContent = entry.title;
+      if (entry.originalTitle) a.title = entry.originalTitle;
+      else a.removeAttribute("title");
+      const meta = li.querySelector("p")!;
+      const time = meta.querySelector("time")!;
+      time.setAttribute("datetime", entry.publishedAt);
+      time.textContent = entry.time;
+      meta.replaceChildren(time, document.createTextNode(entry.sourceName ? ` · ${entry.sourceName}` : ""));
+      sectionFor(entry).appendChild(li);
+    }
+
+    async function loadMore() {
+      if (busy || !hasMore) return;
+      busy = true;
+      link?.classList.add("hidden");
+      loading?.classList.remove("hidden");
+      try {
+        const response = await fetch(`/api/news?offset=${nextOffset}`, { headers: { accept: "application/json" } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const page = (await response.json()) as FeedPage;
+        for (const entry of page.items) {
+          if (seen.has(entry.url)) continue;
+          seen.add(entry.url);
+          render(entry);
+        }
+        nextOffset = page.nextOffset;
+        hasMore = page.hasMore;
+        if (!hasMore) {
+          observer.disconnect();
+          more.remove();
+        }
+      } catch {
+        // Leave the plain link visible so the visitor can retry by hand.
+        if (link) link.href = `/api/news?offset=${nextOffset}`;
+      } finally {
+        busy = false;
+        loading?.classList.add("hidden");
+        if (hasMore) link?.classList.remove("hidden");
+      }
+    }
+
+    link?.addEventListener("click", (event) => {
+      event.preventDefault();
+      void loadMore();
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(more);
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-news-feed]").forEach(initFeed);
+</script>

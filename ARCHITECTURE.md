@@ -11,10 +11,15 @@ News is collected by `scripts/fetch-news.ts` running in GitHub Actions
 (`.github/workflows/fetch-news.yml`, every two hours and on each deploy):
 it queries Google News RSS across a fixed set of Poland / Russia–Ukraine
 topics over an 8-day window (`src/domain/news-collection.ts`) and upserts
-the headlines into the `news_items` D1 table. It runs off-platform on
+the headlines into the `news_items` D1 table, then translates any
+non-English titles into `title_en` with Workers AI
+(`src/domain/headline-translator.ts`). It runs off-platform on
 purpose — Google answers RSS requests coming from Cloudflare Workers with
 HTTP 503, so a Worker-side fetch is always empty. The homepage "Latest
-headlines" ticker and `/news` read `news_items` (`NewsRepository`), and a
+headlines" ticker and `/news` read `news_items` (`NewsRepository`) and
+display the English title (original as tooltip); `/news` server-renders
+the first 25 items and pulls the rest from `/api/news?offset=` as the
+visitor scrolls (`src/domain/news-feed-page.ts`). A
 separate scheduled Worker (`scheduler/`) hands the last 48 hours of it to
 `TypeSafeAiClassificationService` as evidence for TypeSafe AI's System
 One API once per hour, persisting the result to D1 with a full evidence

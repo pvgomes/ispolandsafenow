@@ -3,9 +3,9 @@ import { NewsRepository } from "../../src/repositories/news-repository";
 import { InMemoryD1Database, type InMemoryNewsRow } from "../fakes/in-memory-d1";
 
 const ROWS: InMemoryNewsRow[] = [
-  { id: 1, url: "https://a.pl/1", title: "Older", source_name: "A", published_at: "2026-09-15T10:00:00.000Z" },
-  { id: 2, url: "https://b.pl/2", title: "Newest", source_name: null, published_at: "2026-09-19T08:00:00.000Z" },
-  { id: 3, url: "https://c.pl/3", title: "Middle", source_name: "C", published_at: "2026-09-17T12:00:00.000Z" },
+  { id: 1, url: "https://a.pl/1", title: "Older", title_en: null, source_name: "A", published_at: "2026-09-15T10:00:00.000Z" },
+  { id: 2, url: "https://b.pl/2", title: "Newest", title_en: "Newest (en)", source_name: null, published_at: "2026-09-19T08:00:00.000Z" },
+  { id: 3, url: "https://c.pl/3", title: "Middle", title_en: null, source_name: "C", published_at: "2026-09-17T12:00:00.000Z" },
 ];
 
 describe("NewsRepository", () => {
@@ -17,6 +17,7 @@ describe("NewsRepository", () => {
     expect(items[0]).toEqual({
       url: "https://b.pl/2",
       title: "Newest",
+      titleEn: "Newest (en)",
       sourceName: null,
       publishedAt: "2026-09-19T08:00:00.000Z",
     });

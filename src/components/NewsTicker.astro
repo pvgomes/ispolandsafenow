@@ -1,5 +1,5 @@
 ---
-import type { NewsItem } from "../domain/news-item";
+import { displayTitle, originalTitleIfTranslated, type NewsItem } from "../domain/news-item";
 import { formatShortDate } from "../domain/format-news-date";
 
 export interface Props {
@@ -18,14 +18,15 @@ const { headlines } = Astro.props;
     <div class="relative min-h-[1.75rem]" data-news-ticker data-testid="news-ticker">
       <ul class="list-none">
         {headlines.map((item, index) => (
-          <li hidden={index !== 0} data-ticker-item class="text-base text-slate-700 dark:text-slate-300">
+          <li hidden={index !== 0} data-ticker-item class="ticker-item text-base text-slate-700 dark:text-slate-300">
             <a
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
+              title={originalTitleIfTranslated(item) ?? undefined}
               class="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:decoration-slate-600 dark:hover:decoration-slate-400"
             >
-              {item.title}
+              {displayTitle(item)}
             </a>
             <span class="ml-2 whitespace-nowrap text-sm text-slate-400 dark:text-slate-500">
               <time datetime={item.publishedAt}>{formatShortDate(item.publishedAt)}</time>
@@ -37,6 +38,30 @@ const { headlines } = Astro.props;
     </div>
   )
 }
+
+<style>
+  /* Each headline slides up and fades in when it becomes current. CSS
+     only — the script just toggles `hidden`, the animation restarts on
+     its own because the element re-enters the render tree. */
+  @keyframes ticker-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .ticker-item:not([hidden]) {
+    animation: ticker-in 0.45s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-item:not([hidden]) {
+      animation: none;
+    }
+  }
+</style>
 
 <script>
   // Auto-rotates the news ticker every 8s. Plain vanilla JS, not a

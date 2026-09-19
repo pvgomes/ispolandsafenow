@@ -83,6 +83,7 @@ export function parseRssItems(xml: string): NewsItem[] {
     const sourceName = extractTag(block, "source");
     items.push({
       title: stripSourceSuffix(rawTitle, sourceName),
+      titleEn: null,
       url: link,
       sourceName,
       publishedAt: new Date(parsedMs).toISOString(),

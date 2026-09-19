@@ -43,6 +43,7 @@ export interface InMemoryNewsRow {
   id: number;
   url: string;
   title: string;
+  title_en: string | null;
   source_name: string | null;
   published_at: string;
 }
@@ -181,10 +182,11 @@ class InMemoryStatement {
       const hasSince = sql.includes("WHERE published_at >=");
       const since = hasSince ? (args[0] as string) : null;
       const limit = (hasSince ? args[1] : args[0]) as number;
+      const offset = hasSince && sql.includes("OFFSET") ? (args[2] as number) : 0;
       return [...this.db.news]
         .filter((r) => since === null || r.published_at >= since)
         .sort((a, b) => b.published_at.localeCompare(a.published_at) || b.id - a.id)
-        .slice(0, limit);
+        .slice(offset, offset + limit);
     }
 
     if (sql.includes("FROM regions") && sql.includes("WHERE code")) {

@@ -8,6 +8,7 @@ import PlaceholderSection from "../components/PlaceholderSection.astro";
 import EmergencyGuidance from "../components/EmergencyGuidance.astro";
 import PolandMap from "../components/PolandMap";
 import NewsTicker from "../components/NewsTicker.astro";
+import LiveDot from "../components/LiveDot.astro";
 import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
 import { parseMapSvg } from "../domain/parse-map-svg";
 import { RegionRepository } from "../repositories/region-repository";
@@ -53,8 +54,12 @@ const datasetJsonLd = {
     <h1 class="sr-only">Is Poland Safe Now?</h1>
 
     <section aria-labelledby="news-ticker-heading">
-      <h2 id="news-ticker-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <h2
+        id="news-ticker-heading"
+        class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+      >
         Latest headlines
+        {headlines.length > 0 && <LiveDot />}
       </h2>
       <div class="mt-2">
         <NewsTicker headlines={headlines} />

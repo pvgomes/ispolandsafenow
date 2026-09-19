@@ -71,5 +71,12 @@ flank; results are mostly Polish portals (Onet, WP, Interia, PAP, TVN24,
 RMF, …) plus international outlets, filtered by a keyword relevance check
 (`src/domain/news-relevance.ts`). The window is 8 days, so a fresh
 database is backfilled with about a week of history on the first run.
-The feed is shown on the homepage ticker and `/news`; see
+
+Headlines are stored in their original language and shown in English:
+non-English titles are translated once, by the same script, with
+Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct-fast`) into the
+`title_en` column (`src/domain/headline-translator.ts`); the original
+title is kept and shown as a tooltip. The classifier reads the original
+titles. The feed is shown on the homepage ticker and `/news` (which
+loads further pages from `/api/news` as you scroll); see
 `METHODOLOGY.md` for how the classifier uses it.

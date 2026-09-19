@@ -6,7 +6,7 @@ const NOW = new Date("2026-09-19T12:00:00.000Z");
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 24 * 60 * 60 * 1000).toISOString();
 
 function item(overrides: Partial<NewsItem> & { url: string }): NewsItem {
-  return { title: "Rosja atakuje Ukrainę, Polska podnosi myśliwce", sourceName: "X", publishedAt: daysAgo(1), ...overrides };
+  return { title: "Rosja atakuje Ukrainę, Polska podnosi myśliwce", titleEn: null, sourceName: "X", publishedAt: daysAgo(1), ...overrides };
 }
 
 describe("parseRssItems", () => {
@@ -28,6 +28,7 @@ describe("parseRssItems", () => {
     expect(items).toEqual([
       {
         title: '"Polska przestanie istnieć". Odpowiedź na groźbę Rosji',
+        titleEn: null,
         url: "https://news.google.com/rss/articles/abc",
         sourceName: "Wiadomości Onet",
         publishedAt: "2026-09-18T04:39:00.000Z",

@@ -18,3 +18,8 @@ export function formatDayHeading(iso: string): string {
 export function toUtcDay(iso: string): string {
   return iso.slice(0, 10);
 }
+
+/** "09:55 UTC" style, for a headline's time within a day group. */
+export function formatUtcTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC";
+}

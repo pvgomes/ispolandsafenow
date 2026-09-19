@@ -42,7 +42,8 @@ jobs:
       # Google blocks RSS fetches from Workers, so news is collected here
       # (see .github/workflows/fetch-news.yml for the recurring run) —
       # done before the classification trigger below so that run has
-      # evidence to work with.
+      # evidence to work with. Also translates new headlines with Workers
+      # AI (token needs "Workers AI: Read").
       - name: Fetch news into D1
         run: node scripts/fetch-news.ts
         env:

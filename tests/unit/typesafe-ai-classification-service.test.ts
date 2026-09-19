@@ -35,6 +35,7 @@ describe("TypeSafeAiClassificationService", () => {
     const news: NewsItem[] = [
       {
         title: "Incydent na granicy polsko-białoruskiej",
+        titleEn: null,
         url: "https://example-news.pl/incydent",
         sourceName: "Example News",
         publishedAt: "2026-09-17T20:00:00.000Z",

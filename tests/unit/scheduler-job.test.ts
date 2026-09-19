@@ -20,8 +20,8 @@ const NOW = Date.now();
 const hoursAgo = (h: number) => new Date(NOW - h * 60 * 60 * 1000).toISOString();
 
 const NEWS: InMemoryNewsRow[] = [
-  { id: 1, url: "https://a.pl/fresh", title: "Dron nad Podlasiem", source_name: "A", published_at: hoursAgo(3) },
-  { id: 2, url: "https://b.pl/old", title: "Stara wiadomość", source_name: "B", published_at: hoursAgo(72) },
+  { id: 1, url: "https://a.pl/fresh", title: "Dron nad Podlasiem", title_en: null, source_name: "A", published_at: hoursAgo(3) },
+  { id: 2, url: "https://b.pl/old", title: "Stara wiadomość", title_en: null, source_name: "B", published_at: hoursAgo(72) },
 ];
 
 describe("runClassificationJob (scheduler)", () => {
