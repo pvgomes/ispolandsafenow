@@ -177,7 +177,15 @@ async function main(): Promise<void> {
   console.log(`[fetch-news] upserted into ${options.local ? "local" : "remote"} D1 (${DATABASE_NAME}).`);
 
   if (options.translate) {
-    await translateMissing(options.local);
+    try {
+      await translateMissing(options.local);
+    } catch (error) {
+      // Translation is best-effort: a missing Workers AI permission must
+      // not block the deploy or the news upsert that just succeeded.
+      // Untranslated rows show their original title and are retried later.
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`${process.env.GITHUB_ACTIONS ? "::warning::" : ""}[fetch-news] translation skipped: ${message}`);
+    }
   }
 }
 

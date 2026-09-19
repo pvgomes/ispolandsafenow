@@ -79,8 +79,9 @@ lacks an English title (`title_en`, migration 0004) with Workers AI
 `src/domain/headline-translator.ts`), up to 300 per run, newest first.
 This needs the `CLOUDFLARE_API_TOKEN` to carry the **Workers AI: Read**
 permission (Account scope). Without it the step logs a clear HTTP 401/403
-error and fails the run; without credentials at all it is skipped with a
-warning. Either way, nothing is lost — untranslated rows show their
+warning (surfaced as a GitHub Actions annotation) and the run still
+succeeds; without credentials at all it is skipped with a warning. Either
+way, nothing is lost — untranslated rows show their
 original title and are picked up by a later run. `--no-translate` skips
 the step; headlines that already look English are never sent to the
 model (`src/domain/headline-language.ts`). Cost is roughly one neuron per
