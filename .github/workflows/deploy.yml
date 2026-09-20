@@ -43,9 +43,14 @@ jobs:
       # (see .github/workflows/fetch-news.yml for the recurring run) —
       # done before the classification trigger below so that run has
       # evidence to work with. Also translates new headlines with Workers
-      # AI (token needs "Workers AI: Read").
+      # AI (token needs "Workers AI: Read"). Best-effort: Google News
+      # occasionally rate-limits/blocks a GitHub-hosted runner's IP and
+      # the script then exits non-zero on zero collected items — that must
+      # not block the actual site deploy below, since the recurring
+      # fetch-news.yml workflow retries every 2 hours regardless.
       - name: Fetch news into D1
         run: node scripts/fetch-news.ts
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
