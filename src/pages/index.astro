@@ -68,21 +68,17 @@ const datasetJsonLd = {
       </div>
     </section>
 
-    <NationalStatusCard summary={nationalSummary} lastUpdated={lastUpdated} />
-
     <section aria-labelledby="map-heading">
       <h2 id="map-heading" class="text-xl font-semibold text-slate-900 dark:text-slate-100">Regional map</h2>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Not sure which voivodeship you are in? Search for a city below, or use the city labels on the map. Select a
-        voivodeship to see its status. Works with mouse, touch, and keyboard (Tab, then Enter or Space).
-      </p>
-      <div class="mt-4">
-        <Legend />
-      </div>
       <div class="mt-4">
         <PolandMap client:load viewBox={viewBox} paths={paths} regions={regions} cities={cities} />
       </div>
+      <div class="mt-4">
+        <Legend />
+      </div>
     </section>
+
+    <NationalStatusCard summary={nationalSummary} lastUpdated={lastUpdated} />
 
     <PlaceholderSection
       headingId="whats-happening"

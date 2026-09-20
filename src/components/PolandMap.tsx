@@ -137,54 +137,6 @@ export default function PolandMap({ viewBox, paths, regions, cities = [] }: Pola
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative" data-testid="city-search">
-        <label htmlFor={searchId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Find your city
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          autoComplete="off"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          placeholder="e.g. Kraków, Warsaw, Zakopane, Gdańsk…"
-          aria-controls={resultsId}
-          aria-expanded={searchResults.length > 0}
-          aria-describedby={`${searchId}-hint`}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-        />
-        <p id={`${searchId}-hint`} className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Type a city name to highlight its voivodeship — spelling without Polish letters (Krakow, Lodz) works too.
-        </p>
-        {query.trim().length > 0 && (
-          <ul
-            id={resultsId}
-            className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
-            data-testid="city-search-results"
-          >
-            {searchResults.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-                No city or voivodeship matches &ldquo;{query}&rdquo;.
-              </li>
-            ) : (
-              searchResults.map((result) => (
-                <li key={result.key}>
-                  <button
-                    type="button"
-                    onClick={() => selectFromSearch(result.slug)}
-                    className="flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                  >
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{result.primary}</span>
-                    <span className="truncate text-xs text-slate-500 dark:text-slate-400">{result.secondary}</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        )}
-      </div>
-
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="w-full lg:w-2/3">
           <svg
@@ -316,6 +268,54 @@ export default function PolandMap({ viewBox, paths, regions, cities = [] }: Pola
             </p>
           )}
         </div>
+      </div>
+
+      <div className="relative" data-testid="city-search">
+        <label htmlFor={searchId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          Find your city
+        </label>
+        <input
+          id={searchId}
+          type="search"
+          autoComplete="off"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          placeholder="e.g. Kraków, Warsaw, Zakopane, Gdańsk…"
+          aria-controls={resultsId}
+          aria-expanded={searchResults.length > 0}
+          aria-describedby={`${searchId}-hint`}
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+        />
+        <p id={`${searchId}-hint`} className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Type a city name to highlight its voivodeship — spelling without Polish letters (Krakow, Lodz) works too.
+        </p>
+        {query.trim().length > 0 && (
+          <ul
+            id={resultsId}
+            className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
+            data-testid="city-search-results"
+          >
+            {searchResults.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                No city or voivodeship matches &ldquo;{query}&rdquo;.
+              </li>
+            ) : (
+              searchResults.map((result) => (
+                <li key={result.key}>
+                  <button
+                    type="button"
+                    onClick={() => selectFromSearch(result.slug)}
+                    className="flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                  >
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{result.primary}</span>
+                    <span className="truncate text-xs text-slate-500 dark:text-slate-400">{result.secondary}</span>
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
       </div>
     </div>
   );
