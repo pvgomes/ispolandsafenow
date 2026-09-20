@@ -78,7 +78,7 @@ Headlines are collected from Google News RSS search
 GitHub Actions every two hours (and on each deploy) and stores the
 results in the `news_items` D1 table — title, source outlet, publication
 time and the Google News link, deduplicated by link. Queries cover Poland
-and the Russia–Ukraine war as it touches Poland: airspace and drone
+and the russian agression war as it touches Poland: airspace and drone
 incidents, the Belarus border, Kaliningrad, RCB alerts, NATO's eastern
 flank; results are mostly Polish portals (Onet, WP, Interia, PAP, TVN24,
 RMF, …) plus international outlets, filtered by a keyword relevance check
