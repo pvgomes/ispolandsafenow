@@ -11,7 +11,8 @@ function seedAllRegions(): InMemoryRegionRow[] {
     name_en: r.nameEn,
     current_status: "UNKNOWN",
     last_classified_at: null,
-    status_expires_at: null,
+    status_reason: null,
+    status_driver: null,
     updated_at: "2020-01-01T00:00:00.000Z",
   }));
 }

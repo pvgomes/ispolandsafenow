@@ -12,7 +12,8 @@ export interface MapRegion {
   readonly nameEn: string;
   readonly currentStatus: AlertLevel;
   readonly lastClassifiedAt: string | null;
-  readonly statusExpiresAt: string | null;
+  /** Short "why this colour" sentence from the latest classification. */
+  readonly statusReason: string | null;
 }
 
 /** A city already projected into the map's SVG user space. */
@@ -41,19 +42,6 @@ const MAX_SEARCH_RESULTS = 8;
 const MAP_LABEL_OVERRIDES: Record<string, string> = {
   "Gorzów Wielkopolski": "Gorzów Wlkp.",
 };
-
-function formatTimestamp(value: string | null): string {
-  if (!value) return "Not available";
-  try {
-    return new Date(value).toLocaleString("en-GB", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }) + " UTC";
-  } catch {
-    return "Not available";
-  }
-}
 
 interface SearchResult {
   readonly key: string;
@@ -238,6 +226,9 @@ export default function PolandMap({ viewBox, paths, regions, cities = [] }: Pola
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 {ALERT_LEVEL_PRESENTATION[selectedRegion.currentStatus].description}
               </p>
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-200" data-testid="region-status-reason">
+                {selectedRegion.statusReason ?? "No assessment has been recorded for this region yet."}
+              </p>
               <dl className="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
                 {selectedCities.length > 0 && (
                   <div data-testid="region-cities">
@@ -245,20 +236,12 @@ export default function PolandMap({ viewBox, paths, regions, cities = [] }: Pola
                     <dd className="inline">{formatCityList(selectedCities)}</dd>
                   </div>
                 )}
-                <div>
-                  <dt className="inline font-medium text-slate-700 dark:text-slate-300">Last classified: </dt>
-                  <dd className="inline">{formatTimestamp(selectedRegion.lastClassifiedAt)}</dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium text-slate-700 dark:text-slate-300">Status expires: </dt>
-                  <dd className="inline">{formatTimestamp(selectedRegion.statusExpiresAt)}</dd>
-                </div>
               </dl>
               <a
                 href={`/regions/${selectedRegion.slug}`}
                 className="mt-3 inline-block text-sm font-medium text-slate-900 underline underline-offset-2 dark:text-slate-100"
               >
-                View full region page
+                See the news behind this status
               </a>
             </div>
           ) : (

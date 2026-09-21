@@ -21,14 +21,16 @@ export function applyClassifications(
         ...region,
         currentStatus: "UNKNOWN",
         lastClassifiedAt: null,
-        statusExpiresAt: null,
+        statusReason: null,
+        statusDriver: null,
       };
     }
     return {
       ...region,
       currentStatus: classification.status,
       lastClassifiedAt: classification.classifiedAt,
-      statusExpiresAt: classification.expiresAt,
+      statusReason: classification.rationale,
+      statusDriver: classification.driver,
     };
   });
 }

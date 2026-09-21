@@ -119,19 +119,49 @@ service raises `ClassificationUnavailableError`; the scheduler records a
 region whose individual answer is missing or unrecognized is likewise
 omitted from the result and left untouched. This is deliberate: on
 2026-09-21T07:00Z a single upstream HTTP 503 overwrote a healthy
-14×GREEN/2×YELLOW map with 16×UNKNOWN (and `status_expires_at = NULL`,
-so it could not even age out), which is exactly the failure mode this
-design prevents.
+14×GREEN/2×YELLOW map with 16×UNKNOWN, which is exactly the failure mode
+this design prevents.
 
-`UNKNOWN` therefore reaches the site through one route only:
-`resolveEffectiveStatus` (`src/domain/region.ts`, applied when
-`RegionRepository` reads a row), where a classification whose
-`status_expires_at` (2 hours after `classified_at`) has passed — i.e. the
-hourly scheduler missed a couple of runs — resolves to `UNKNOWN` rather
-than showing a frozen, possibly-outdated status forever. The invariant
+Statuses **do not expire**. A classification stands until a later run
+replaces it, so a run of failed or missed hourly jobs leaves the last
+known assessment in place instead of blanking the map. `UNKNOWN`
+therefore reaches the site through one route only: `resolveEffectiveStatus`
+(`src/domain/region.ts`, applied when `RegionRepository` reads a row),
+where a region that has never been classified (`last_classified_at IS
+NULL`) resolves to `UNKNOWN` regardless of the colour stored next to it.
+The invariant
 this app is built around ("missing or untrustworthy data must never
 resolve to GREEN") lives at that boundary, not in the model's own
 judgment calls.
+
+## Why a region has its colour
+
+A colour alone doesn't tell a visitor anything, so each hourly run also
+asks TypeSafe AI a **second `choice` question per region** — question id
+`<code>:driver` alongside `<code>` — picking the main driver behind that
+region's level (airspace incident, border pressure, military activity,
+sabotage/infrastructure, cyber/disinformation, war spillover, nothing
+notable). System One returns structured answers only, never free text,
+which is why the "why" is a constrained choice rather than a generated
+sentence.
+
+`buildStatusReason` (`src/domain/status-reason.ts`) renders that driver
+into one sentence, combined with how many collected headlines actually
+name the region — e.g. *"Drone, missile or airspace activity was
+reported in or near this region. Based on 3 recent headlines mentioning
+Mazowieckie."* It is persisted as `regions.status_reason` (with
+`regions.status_driver`) and shown on the map panel, the region page and
+`/api/regions`.
+
+Which headlines "name the region" is decided by
+`src/domain/region-news-match.ts`: official voivodeship names, colloquial
+ones (Mazowsze, Podlasie, Śląsk, Mazury…) and the region's major cities,
+matched on normalized word-start prefixes so Pomorskie,
+Kujawsko-Pomorskie and Zachodniopomorskie never steal each other's news.
+Those matched headlines (max 8 per region) are stored as that
+classification's `classification_evidence` and listed on the region page
+under "News behind this status"; a region with no match falls back to
+recent Poland-wide reporting.
 Every page and API response is stamped `"mode": "live"`.
 
 ## The Cloudflare build/dev model (a note on `wrangler.jsonc`)

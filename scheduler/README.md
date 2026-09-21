@@ -28,9 +28,11 @@ framework's build.
    evidence (`TypeSafeAiClassificationService`).
 4. For each region: inserts a `region_classifications` row (full history,
    nothing overwritten), inserts one `classification_evidence` row per
-   collected headline, and updates that region's live snapshot
-   (`regions.current_status` / `last_classified_at` / `status_expires_at`)
-   — see `src/repositories/classification-writer.ts`.
+   headline that actually names that region (max 8, see
+   `src/domain/region-news-match.ts`), and updates that region's live
+   snapshot (`regions.current_status` / `last_classified_at` /
+   `status_reason` / `status_driver`) — see
+   `src/repositories/classification-writer.ts`.
 5. Marks the `job_runs` row `succeeded` (with a small summary) or
    `failed` (with the error message).
 
@@ -42,12 +44,11 @@ the deploy workflow calls right after each deploy.
 
 If a run fails outright (step 2 or 3 throws), existing regions are left
 at their last good status rather than being forced to UNKNOWN — one
-missed hourly run shouldn't blank out the whole site. `resolveEffectiveStatus`
-(`src/domain/region.ts`, applied in `RegionRepository`) is the actual
-safety net: a classification's `status_expires_at` (2 hours from
-`classified_at`) means a couple of consecutive missed/failed runs still
-age the status back to UNKNOWN on its own, without any special-casing in
-the job itself.
+missed hourly run shouldn't blank out the whole site. Statuses do not
+expire, so a region keeps its last assessment until a later successful
+run replaces it; `resolveEffectiveStatus` (`src/domain/region.ts`,
+applied in `RegionRepository`) only forces UNKNOWN for a region that has
+never been classified at all.
 
 ## Deploying and running it
 

@@ -4,9 +4,16 @@ import SiteHeader from "../../components/SiteHeader.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
 import { ALERT_LEVEL_PRESENTATION } from "../../domain/alert-level";
 import { RegionRepository } from "../../repositories/region-repository";
+import type { RegionEvidence } from "../../repositories/region-repository";
+import { NewsRepository } from "../../repositories/news-repository";
 import { MAJOR_CITIES } from "../../data/cities";
 import { capitalOfRegion, citiesForRegion, formatCityList } from "../../domain/city";
+import { formatShortDate } from "../../domain/format-news-date";
+import { STATUS_DRIVERS } from "../../domain/status-reason";
 import { env } from "cloudflare:workers";
+
+/** How many stories are listed as the reason for the current colour. */
+const MAX_RELATED_NEWS = 8;
 
 const { slug } = Astro.params;
 const regionRepository = new RegionRepository(env.DB);
@@ -19,6 +26,24 @@ if (!region) {
 }
 
 const presentation = region ? ALERT_LEVEL_PRESENTATION[region.currentStatus] : null;
+const driver = region?.statusDriver ? STATUS_DRIVERS[region.statusDriver] : null;
+
+// The stories behind this region's colour: the headlines stored with its
+// latest classification. When that run found nothing naming this region,
+// fall back to recent Poland-wide reporting so the page still shows what
+// the assessment was made against.
+const regionEvidence: RegionEvidence[] = region ? await regionRepository.listLatestEvidence(region.code, MAX_RELATED_NEWS) : [];
+const isRegionSpecific = regionEvidence.length > 0;
+const relatedNews: RegionEvidence[] = isRegionSpecific
+  ? regionEvidence
+  : region
+    ? (await new NewsRepository(env.DB).listLatest(MAX_RELATED_NEWS)).map((item) => ({
+        sourceUrl: item.url,
+        sourceName: item.sourceName,
+        title: item.titleEn ?? item.title,
+        publishedAt: item.publishedAt,
+      }))
+    : [];
 const cities = region ? citiesForRegion(MAJOR_CITIES, region.slug) : [];
 const capital = region ? capitalOfRegion(MAJOR_CITIES, region.slug) : undefined;
 const cityNames = cities.map((city) => city.name);
@@ -29,7 +54,7 @@ const pageTitle = region
 const cityPhrase = cityNames.length > 0 ? `, home to ${cityNames.slice(0, 3).join(", ")}` : "";
 const pageDescription =
   region && presentation
-    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships${cityPhrase}: ${presentation.label} — ${presentation.description}`
+    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships${cityPhrase}: ${presentation.label} — ${region.statusReason ?? presentation.description}`
     : "This voivodeship could not be found.";
 
 const placeJsonLd = region
@@ -93,16 +118,61 @@ const placeJsonLd = region
               <span class={`text-2xl font-bold ${presentation.colorClass}`}>{presentation.label}</span>
             </div>
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{presentation.description}</p>
-            <dl class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
-              <div>
-                <dt class="inline font-medium text-slate-700 dark:text-slate-300">Last classified: </dt>
-                <dd class="inline">{region.lastClassifiedAt ?? "Not available"}</dd>
-              </div>
-              <div>
-                <dt class="inline font-medium text-slate-700 dark:text-slate-300">Status expires: </dt>
-                <dd class="inline">{region.statusExpiresAt ?? "Not available"}</dd>
-              </div>
-            </dl>
+            <p class="mt-3 text-sm text-slate-700 dark:text-slate-200" data-testid="region-status-reason">
+              {region.statusReason ?? "No assessment has been recorded for this region yet."}
+            </p>
+            {driver && (
+              <p class="mt-2 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" data-testid="region-status-driver">
+                Main driver: {driver.label}
+              </p>
+            )}
+          </section>
+
+          <section
+            class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"
+            aria-labelledby="region-news-heading"
+          >
+            <h2 id="region-news-heading" class="text-base font-semibold text-slate-500 dark:text-slate-400">
+              {isRegionSpecific ? `News behind this status` : `Recent Poland-wide reporting`}
+            </h2>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              {
+                isRegionSpecific
+                  ? `These are the headlines that mention ${region.namePl} or its cities and were used to classify it.`
+                  : `No recent headline names ${region.namePl} directly, so its status rests on this Poland-wide reporting.`
+              }
+            </p>
+            {
+              relatedNews.length === 0 ? (
+                <p class="mt-3 text-sm italic text-slate-500 dark:text-slate-400" data-testid="region-news-empty">
+                  No headlines have been collected yet.
+                </p>
+              ) : (
+                <ul class="mt-3 flex flex-col divide-y divide-slate-200 dark:divide-slate-700" data-testid="region-news">
+                  {relatedNews.map((item) => (
+                    <li class="py-3 first:pt-0 last:pb-0">
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400"
+                      >
+                        {item.title ?? item.sourceUrl}
+                      </a>
+                      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {item.publishedAt && <time datetime={item.publishedAt}>{formatShortDate(item.publishedAt)}</time>}
+                        {item.sourceName && <>{item.publishedAt ? " · " : ""}{item.sourceName}</>}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+            <p class="mt-4 text-sm">
+              <a class="underline underline-offset-2 text-slate-600 dark:text-slate-300" href="/news">
+                See all collected headlines
+              </a>
+            </p>
           </section>
 
           <p class="text-sm text-slate-500 dark:text-slate-400">

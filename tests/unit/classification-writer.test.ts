@@ -11,7 +11,8 @@ function seedRegion(code: string): InMemoryRegionRow {
     name_en: code,
     current_status: "UNKNOWN",
     last_classified_at: null,
-    status_expires_at: null,
+    status_reason: null,
+    status_driver: null,
     updated_at: "2020-01-01T00:00:00.000Z",
   };
 }
@@ -27,8 +28,8 @@ describe("ClassificationWriter", () => {
       status: "YELLOW",
       confidence: 0.7,
       rationale: "test rationale",
+      driver: "BORDER_PRESSURE",
       classifiedAt: "2026-01-01T00:00:00.000Z",
-      expiresAt: "2026-01-01T02:00:00.000Z",
       evidence: [
         {
           sourceUrl: "https://example.com/a",
@@ -52,7 +53,8 @@ describe("ClassificationWriter", () => {
     const region = db.regions.find((r) => r.code === "PL-14");
     expect(region?.current_status).toBe("YELLOW");
     expect(region?.last_classified_at).toBe("2026-01-01T00:00:00.000Z");
-    expect(region?.status_expires_at).toBe("2026-01-01T02:00:00.000Z");
+    expect(region?.status_reason).toBe("test rationale");
+    expect(region?.status_driver).toBe("BORDER_PRESSURE");
   });
 
   it("records multiple classifications under the same job run without overwriting history", async () => {
@@ -67,8 +69,8 @@ describe("ClassificationWriter", () => {
           status: "GREEN",
           confidence: null,
           rationale: null,
+          driver: null,
           classifiedAt: "2026-01-01T00:00:00.000Z",
-          expiresAt: "2026-01-01T02:00:00.000Z",
           evidence: [],
         },
         jobRunId,

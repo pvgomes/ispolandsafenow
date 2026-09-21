@@ -10,7 +10,8 @@ function region(status: RegionWithStatus["currentStatus"], code = "PL-00"): Regi
     nameEn: code,
     currentStatus: status,
     lastClassifiedAt: null,
-    statusExpiresAt: null,
+    statusReason: null,
+    statusDriver: null,
   };
 }
 

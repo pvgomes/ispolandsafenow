@@ -7,7 +7,7 @@ export type JobStatus = "running" | "succeeded" | "failed";
  * invocation, a `region_classifications` + `classification_evidence` row
  * per region per run (full history, nothing overwritten), and updates
  * each `regions` row's current snapshot (`current_status`,
- * `last_classified_at`, `status_expires_at`) so `RegionRepository` reads
+ * `last_classified_at`, `status_reason`, `status_driver`) so `RegionRepository` reads
  * stay O(1) — no join or "latest classification" query needed on the
  * site's hot read path.
  */
@@ -35,16 +35,16 @@ export class ClassificationWriter {
   async writeClassification(classification: RegionClassification, jobRunId: number): Promise<void> {
     const classificationRow = await this.db
       .prepare(
-        "INSERT INTO region_classifications (region_code, status, confidence, rationale, source, classified_at, expires_at, job_run_id) " +
-          "VALUES (?1, ?2, ?3, ?4, 'typesafe-ai', ?5, ?6, ?7) RETURNING id",
+        "INSERT INTO region_classifications (region_code, status, confidence, rationale, driver, source, classified_at, job_run_id) " +
+          "VALUES (?1, ?2, ?3, ?4, ?5, 'typesafe-ai', ?6, ?7) RETURNING id",
       )
       .bind(
         classification.regionCode,
         classification.status,
         classification.confidence,
         classification.rationale,
+        classification.driver,
         classification.classifiedAt,
-        classification.expiresAt,
         jobRunId,
       )
       .first<{ id: number }>();
@@ -70,12 +70,13 @@ export class ClassificationWriter {
 
     await this.db
       .prepare(
-        "UPDATE regions SET current_status = ?1, last_classified_at = ?2, status_expires_at = ?3, updated_at = ?4 WHERE code = ?5",
+        "UPDATE regions SET current_status = ?1, last_classified_at = ?2, status_reason = ?3, status_driver = ?4, updated_at = ?5 WHERE code = ?6",
       )
       .bind(
         classification.status,
         classification.classifiedAt,
-        classification.expiresAt,
+        classification.rationale,
+        classification.driver,
         new Date().toISOString(),
         classification.regionCode,
       )

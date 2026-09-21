@@ -1,5 +1,6 @@
 import type { AlertLevel } from "./alert-level";
 import type { RegionIdentity } from "./region";
+import type { StatusDriver } from "./status-reason";
 
 /**
  * A single piece of evidence (news article, official notice, etc.) backing
@@ -19,9 +20,12 @@ export interface RegionClassification {
   readonly regionCode: string;
   readonly status: AlertLevel;
   readonly confidence: number | null;
+  /** Short, human-readable "why this colour" sentence shown to visitors. */
   readonly rationale: string | null;
+  /** Machine-readable driver behind the colour; `null` when the classifier gave none. */
+  readonly driver: StatusDriver | null;
   readonly classifiedAt: string;
-  readonly expiresAt: string | null;
+  /** Headlines that name this region, i.e. the stories behind its colour. */
   readonly evidence: readonly ClassificationEvidence[];
 }
 
@@ -53,8 +57,8 @@ export interface ClassificationService {
  *
  * This is deliberately an error rather than a list of UNKNOWN results: a
  * pipeline failure says nothing about the regions, so the caller must
- * leave the stored statuses exactly as they are and let them expire
- * naturally (see `resolveEffectiveStatus`). Writing UNKNOWN here would
+ * leave the stored statuses exactly as they are (see
+ * `resolveEffectiveStatus`). Writing UNKNOWN here would
  * turn one transient upstream hiccup — e.g. the HTTP 503 seen on
  * 2026-09-21T07:00Z — into a blank map until the next successful run.
  */

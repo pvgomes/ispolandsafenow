@@ -10,7 +10,8 @@ export interface FakeRegionRow {
   name_en: string;
   current_status: string;
   last_classified_at: string | null;
-  status_expires_at: string | null;
+  status_reason: string | null;
+  status_driver: string | null;
 }
 
 class FailingStatement {
@@ -42,6 +43,11 @@ class FakeStatement {
   async all<T>(): Promise<{ results: T[] }> {
     if (this.sql.includes("COUNT(*)")) {
       return { results: [{ count: this.rows.length } as T] };
+    }
+    // Region pages ask for the evidence behind the latest classification;
+    // this fake stores regions only, so that list is always empty.
+    if (this.sql.includes("FROM classification_evidence")) {
+      return { results: [] };
     }
     const sorted = [...this.rows].sort((a, b) => a.code.localeCompare(b.code));
     return { results: sorted as unknown as T[] };

@@ -34,14 +34,21 @@ describe("TypeSafeAiClassificationService", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("parses a successful TypeSafe AI response into region classifications, using the supplied news as evidence", async () => {
+  it("parses a successful TypeSafe AI response into region classifications, keeping only the news that names each region", async () => {
     const news: NewsItem[] = [
       {
-        title: "Incydent na granicy polsko-białoruskiej",
+        title: "Incydent na granicy polsko-białoruskiej na Podlasiu",
         titleEn: null,
         url: "https://example-news.pl/incydent",
         sourceName: "Example News",
         publishedAt: "2026-09-17T20:00:00.000Z",
+      },
+      {
+        title: "Alarm w Warszawie",
+        titleEn: null,
+        url: "https://example-news.pl/warszawa",
+        sourceName: "Example News",
+        publishedAt: "2026-09-17T21:00:00.000Z",
       },
     ];
 
@@ -69,13 +76,18 @@ describe("TypeSafeAiClassificationService", () => {
     expect(typeSafeAiCall).toBeDefined();
     const body = JSON.parse((typeSafeAiCall?.[1] as RequestInit).body as string);
     expect(body.state).toContain("Incydent na granicy polsko-białoruskiej");
+    // Two questions per region: the alert level and the driver behind it.
+    expect(body.questions["PL-14"]).toBeDefined();
+    expect(body.questions["PL-14:driver"]).toBeDefined();
     expect((typeSafeAiCall?.[1] as RequestInit & { headers: Record<string, string> }).headers.Authorization).toBe("Bearer test-key");
 
     const byCode = new Map(result.map((r) => [r.regionCode, r]));
     expect(byCode.get("PL-14")?.status).toBe("YELLOW");
     expect(byCode.get("PL-14")?.confidence).toBe(0.81);
-    expect(byCode.get("PL-14")?.evidence).toHaveLength(1);
-    expect(byCode.get("PL-14")?.evidence[0]?.sourceUrl).toBe("https://example-news.pl/incydent");
+    // Evidence is scoped to the region: Warsaw news belongs to Mazowieckie,
+    // the Podlasie headline to Podlaskie.
+    expect(byCode.get("PL-14")?.evidence.map((e) => e.sourceUrl)).toEqual(["https://example-news.pl/warszawa"]);
+    expect(byCode.get("PL-20")?.evidence.map((e) => e.sourceUrl)).toEqual(["https://example-news.pl/incydent"]);
     expect(byCode.get("PL-20")?.status).toBe("RED");
   });
 
@@ -178,7 +190,7 @@ describe("TypeSafeAiClassificationService", () => {
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(result[0]?.status).toBe("GREEN");
-    expect(result[0]?.expiresAt).not.toBeNull();
+    expect(result[0]?.rationale).toBeTruthy();
   });
 
   it("only offers GREEN/YELLOW/RED as AI-selectable criteria, not UNKNOWN", async () => {

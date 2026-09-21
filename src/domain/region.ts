@@ -1,4 +1,5 @@
 import type { AlertLevel } from "./alert-level";
+import type { StatusDriver } from "./status-reason";
 
 /** Stable identity data for one of the 16 Polish voivodeships. */
 export interface RegionIdentity {
@@ -16,21 +17,25 @@ export interface RegionIdentity {
 export interface RegionStatus {
   readonly currentStatus: AlertLevel;
   readonly lastClassifiedAt: string | null;
-  readonly statusExpiresAt: string | null;
+  /** Short "why this colour" sentence; `null` until first classified. */
+  readonly statusReason: string | null;
+  /** Machine-readable driver behind the colour; `null` when unavailable. */
+  readonly statusDriver: StatusDriver | null;
 }
 
 /** A region with its current status attached, as shown on the map and API. */
 export interface RegionWithStatus extends RegionIdentity, RegionStatus {}
 
 /**
- * A region's status is stale once past its expiry, or once it has never
- * been classified. Stale/missing data must resolve to UNKNOWN, never GREEN.
+ * A region that has never been classified resolves to UNKNOWN — missing
+ * data must never resolve to GREEN.
+ *
+ * Statuses deliberately do not expire: a classification stands until the
+ * hourly job replaces it, so a run of failed or skipped runs leaves the
+ * last real assessment visible instead of blanking the map.
  */
-export function resolveEffectiveStatus(status: RegionStatus, now: Date = new Date()): AlertLevel {
+export function resolveEffectiveStatus(status: RegionStatus): AlertLevel {
   if (!status.lastClassifiedAt) {
-    return "UNKNOWN";
-  }
-  if (status.statusExpiresAt && new Date(status.statusExpiresAt).getTime() <= now.getTime()) {
     return "UNKNOWN";
   }
   return status.currentStatus;

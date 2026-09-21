@@ -35,13 +35,12 @@ judgment:
    A failed run does **not** publish `UNKNOWN`: it raises
    `ClassificationUnavailableError`, is recorded as a `failed` job run,
    and every stored status is left untouched, so a momentary upstream
-   outage can no longer blank the map. Those statuses then age out
-   through the staleness rule below if the outage lasts.
-2. **Staleness**, in `resolveEffectiveStatus` (`src/domain/region.ts`,
-   applied when `RegionRepository` reads a row): a classification whose
-   `status_expires_at` has passed — meaning the hourly scheduler missed a
-   run or two — resolves to `UNKNOWN` rather than showing a frozen,
-   possibly-outdated status indefinitely.
+   outage can no longer blank the map.
+2. **Never classified**, in `resolveEffectiveStatus`
+   (`src/domain/region.ts`, applied when `RegionRepository` reads a row):
+   a region with no `last_classified_at` resolves to `UNKNOWN` whatever
+   colour is stored beside it. Statuses themselves do not expire — an
+   assessment stands until a later run replaces it.
 
 Also: `toAlertLevel` (`src/domain/alert-level.ts`) coerces any
 unrecognized string to `UNKNOWN`, and `applyClassifications`
@@ -69,14 +68,20 @@ the site itself never calls TypeSafe AI. A separate scheduled Worker
 2. Sends those headlines to TypeSafe AI's System One API
    (`POST https://api.typesafe.ai/v1/systemone`, model `jev-latest`) as
    the prompt's evidence, asking one "choice" question per region,
-   offering only GREEN / YELLOW / RED. The model is instructed to default
-   to GREEN — not invent an incident — when a region has no relevant
-   headline.
-3. Persists each region's classification, its evidence (the collected
-   headlines), and a `job_runs` record of the run itself
+   offering only GREEN / YELLOW / RED, plus a second "choice" question per
+   region (`<code>:driver`) for the main driver behind that level. The
+   model is instructed to default to GREEN — not invent an incident —
+   when a region has no relevant headline.
+3. Turns that driver into a one-sentence reason
+   (`src/domain/status-reason.ts`) and matches the collected headlines to
+   each region by name, colloquial name and major city
+   (`src/domain/region-news-match.ts`).
+4. Persists each region's classification, its driver, its evidence (the
+   headlines that actually name that region, max 8), and a `job_runs`
+   record of the run itself
    (`src/repositories/classification-writer.ts`), and updates that
    region's live snapshot (`regions.current_status` /
-   `last_classified_at` / `status_expires_at`).
+   `last_classified_at` / `status_reason` / `status_driver`).
 
 Because the site only reads this persisted snapshot, per-visitor cost is
 flat regardless of traffic — 10 users or 10,000 make the same number of

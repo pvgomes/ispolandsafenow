@@ -1,14 +1,21 @@
 import { isAlertLevel, toAlertLevel, type AlertLevel } from "./alert-level";
 import { ClassificationUnavailableError } from "./classification-service";
 import type { ClassificationEvidence, ClassificationInput, ClassificationService, RegionClassification } from "./classification-service";
+import type { MajorCity } from "./city";
 import type { NewsItem } from "./news-item";
+import { newsForRegion } from "./region-news-match";
 import type { RegionIdentity } from "./region";
+import { buildStatusReason, STATUS_DRIVERS, toStatusDriver } from "./status-reason";
+import { MAJOR_CITIES } from "../data/cities";
 
 const TYPESAFE_AI_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 const TYPESAFE_AI_MODEL = "jev-latest";
 
-/** Freshness window applied to every classification this service produces. */
-const CLASSIFICATION_TTL_MS = 2 * 60 * 60 * 1000;
+/** Most region-specific headlines stored as evidence for one region. */
+const MAX_EVIDENCE_PER_REGION = 8;
+
+/** Suffix of the second question asked per region: why that colour. */
+const DRIVER_QUESTION_SUFFIX = ":driver";
 
 /** Attempts (including the first) for one System One request. */
 const MAX_ATTEMPTS = 3;
@@ -48,10 +55,27 @@ function buildStatePrompt(asOf: string, news: readonly NewsItem[]): string {
     `Treat these headlines as your primary evidence. Default to GREEN (no elevated regional signal found) for any ` +
     `region with no relevant headline above and no other strong, current signal — do not invent incidents the ` +
     `headlines don't mention. Only choose YELLOW or RED when the evidence actually supports an elevated situation ` +
-    `or a confirmed incident for that specific region.`
+    `or a confirmed incident for that specific region.\n\n` +
+    `For each region you are asked twice: once for the alert level, and once for the single main reason behind ` +
+    `that level. The reason must be consistent with the level you chose and with the headlines above — visitors ` +
+    `are shown it as the explanation for the colour on the map.`
   );
 }
 
+function driverCriteria(): Record<string, string> {
+  const criteria: Record<string, string> = {};
+  for (const [driver, presentation] of Object.entries(STATUS_DRIVERS)) {
+    criteria[driver] = presentation.criteria;
+  }
+  return criteria;
+}
+
+/**
+ * Two questions per region: the colour, and the single main reason for
+ * it. System One only answers in structured form, so the "why" is a
+ * second `choice` question rather than free text — the sentence visitors
+ * read is rendered from that choice by `buildStatusReason`.
+ */
 function buildQuestions(regions: readonly RegionIdentity[]) {
   const questions: Record<string, unknown> = {};
   for (const region of regions) {
@@ -63,6 +87,11 @@ function buildQuestions(regions: readonly RegionIdentity[]) {
         YELLOW: "An elevated situation requiring attention, supported by the evidence.",
         RED: "A serious active warning or confirmed incident, supported by the evidence.",
       },
+    };
+    questions[`${region.code}${DRIVER_QUESTION_SUFFIX}`] = {
+      type: "choice",
+      instructions: `What is the single main reason for that level in the ${region.nameEn} voivodeship (Polish: ${region.namePl})? Pick NOTHING_NOTABLE whenever the level is GREEN and no headline above concerns this region.`,
+      criteria: driverCriteria(),
     };
   }
   return questions;
@@ -108,10 +137,10 @@ function toEvidence(news: readonly NewsItem[]): ClassificationEvidence[] {
  * `ClassificationUnavailableError`, and a region whose individual answer
  * is missing or unrecognized is simply omitted from the result. Either
  * way the caller writes nothing for the affected regions, so their last
- * good status stands until it expires on its own (see
- * `resolveEffectiveStatus`) and only *then* reads as UNKNOWN. Missing or
- * untrustworthy data still never resolves to GREEN — it just no longer
- * destroys the previous assessment the moment upstream hiccups.
+ * good status simply stands until a later run replaces it (see
+ * `resolveEffectiveStatus`). Missing or untrustworthy data still never
+ * resolves to GREEN — it just no longer destroys the previous assessment
+ * the moment upstream hiccups.
  */
 export class TypeSafeAiClassificationService implements ClassificationService {
   constructor(
@@ -119,6 +148,8 @@ export class TypeSafeAiClassificationService implements ClassificationService {
     private readonly evidenceSource: EvidenceSource,
     /** Backoff between retries; overridable so tests don't actually wait. */
     private readonly retryDelaysMs: readonly number[] = RETRY_DELAYS_MS,
+    /** City list used to decide which headlines concern which region. */
+    private readonly cities: readonly MajorCity[] = MAJOR_CITIES,
   ) {}
 
   async classifyRegions(input: ClassificationInput): Promise<RegionClassification[]> {
@@ -127,7 +158,6 @@ export class TypeSafeAiClassificationService implements ClassificationService {
     }
 
     const news = await this.evidenceSource();
-    const evidence = toEvidence(news);
 
     const response = await this.requestWithRetry({
       state: buildStatePrompt(input.asOf, news),
@@ -142,7 +172,6 @@ export class TypeSafeAiClassificationService implements ClassificationService {
       throw new ClassificationUnavailableError("TypeSafe AI response was not valid JSON.");
     }
 
-    const expiresAt = new Date(new Date(input.asOf).getTime() + CLASSIFICATION_TTL_MS).toISOString();
     const classifications: RegionClassification[] = [];
 
     for (const region of input.regions) {
@@ -161,16 +190,28 @@ export class TypeSafeAiClassificationService implements ClassificationService {
 
       const status: AlertLevel = toAlertLevel(answer.choice);
       const confidence = typeof answer.confidence === "number" ? answer.confidence : null;
-      const confidenceSuffix = confidence !== null ? ` (confidence ${confidence.toFixed(2)})` : "";
+
+      const driverAnswer = body.answers?.[`${region.code}${DRIVER_QUESTION_SUFFIX}`];
+      const driver = isChoiceAnswer(driverAnswer) ? toStatusDriver(driverAnswer.choice) : null;
+
+      // Only the headlines that actually name this region are kept, so a
+      // region page shows the stories behind *its* colour rather than the
+      // whole national feed repeated 16 times.
+      const regionNews = newsForRegion(news, region, this.cities).slice(0, MAX_EVIDENCE_PER_REGION);
 
       classifications.push({
         regionCode: region.code,
         status,
         confidence,
-        rationale: `TypeSafe AI (model ${TYPESAFE_AI_MODEL}) classification from collected headlines${confidenceSuffix}.`,
+        rationale: buildStatusReason({
+          status,
+          driver,
+          regionName: region.namePl,
+          matchedHeadlineCount: regionNews.length,
+        }),
+        driver,
         classifiedAt: input.asOf,
-        expiresAt,
-        evidence,
+        evidence: toEvidence(regionNews),
       });
     }
 

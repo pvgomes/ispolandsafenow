@@ -16,7 +16,8 @@ function seededRegionRows(): InMemoryRegionRow[] {
     name_en: r.name_en,
     current_status: "UNKNOWN",
     last_classified_at: null,
-    status_expires_at: null,
+    status_reason: null,
+    status_driver: null,
     updated_at: "2026-09-19T00:00:00.000Z",
   }));
 }
@@ -30,7 +31,8 @@ describe("buildSitemapEntries", () => {
       nameEn: r.name_en,
       currentStatus: "UNKNOWN",
       lastClassifiedAt: null,
-      statusExpiresAt: null,
+      statusReason: null,
+      statusDriver: null,
     }));
     const entries = buildSitemapEntries({ site: SITE, regions, latestNews: null });
     const locs = entries.map((e) => e.loc);
@@ -44,8 +46,8 @@ describe("buildSitemapEntries", () => {
 
   it("derives lastmod from real content timestamps only", () => {
     const regions: RegionWithStatus[] = [
-      { code: "02", slug: "dolnoslaskie", namePl: "a", nameEn: "b", currentStatus: "GREEN", lastClassifiedAt: "2026-09-19T10:00:00.000Z", statusExpiresAt: null },
-      { code: "04", slug: "kujawsko-pomorskie", namePl: "a", nameEn: "b", currentStatus: "UNKNOWN", lastClassifiedAt: null, statusExpiresAt: null },
+      { code: "02", slug: "dolnoslaskie", namePl: "a", nameEn: "b", currentStatus: "GREEN", lastClassifiedAt: "2026-09-19T10:00:00.000Z", statusReason: null, statusDriver: null },
+      { code: "04", slug: "kujawsko-pomorskie", namePl: "a", nameEn: "b", currentStatus: "UNKNOWN", lastClassifiedAt: null, statusReason: null, statusDriver: null },
     ];
     const latestNews = { url: "https://n.pl/1", title: "t", titleEn: null, sourceName: null, publishedAt: "2026-09-19T11:30:00.000Z" };
     const byLoc = new Map(buildSitemapEntries({ site: SITE, regions, latestNews }).map((e) => [e.loc, e]));

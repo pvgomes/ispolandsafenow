@@ -14,7 +14,8 @@ describe("applyClassifications", () => {
     const dolnoslaskie = result.find((r) => r.code === "PL-02");
     expect(dolnoslaskie?.currentStatus).toBe("UNKNOWN");
     expect(dolnoslaskie?.lastClassifiedAt).toBeNull();
-    expect(dolnoslaskie?.statusExpiresAt).toBeNull();
+    expect(dolnoslaskie?.statusReason).toBeNull();
+    expect(dolnoslaskie?.statusDriver).toBeNull();
   });
 
   it("applies a matching classification's status and timestamps", () => {
@@ -25,7 +26,7 @@ describe("applyClassifications", () => {
         confidence: null,
         rationale: "test",
         classifiedAt: "2026-01-01T00:00:00.000Z",
-        expiresAt: "2026-01-02T00:00:00.000Z",
+        driver: "AIRSPACE_INCIDENT",
         evidence: [],
       },
     ];
@@ -33,6 +34,6 @@ describe("applyClassifications", () => {
     const mazowieckie = result.find((r) => r.code === "PL-14");
     expect(mazowieckie?.currentStatus).toBe("RED");
     expect(mazowieckie?.lastClassifiedAt).toBe("2026-01-01T00:00:00.000Z");
-    expect(mazowieckie?.statusExpiresAt).toBe("2026-01-02T00:00:00.000Z");
+    expect(mazowieckie?.statusDriver).toBe("AIRSPACE_INCIDENT");
   });
 });

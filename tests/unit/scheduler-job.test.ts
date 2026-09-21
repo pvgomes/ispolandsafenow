@@ -11,7 +11,8 @@ function seedAllRegions(): InMemoryRegionRow[] {
     name_en: r.nameEn,
     current_status: "UNKNOWN",
     last_classified_at: null,
-    status_expires_at: null,
+    status_reason: null,
+    status_driver: null,
     updated_at: "2020-01-01T00:00:00.000Z",
   }));
 }
@@ -50,11 +51,14 @@ describe("runClassificationJob (scheduler)", () => {
     expect(db.jobRuns[0]?.status).toBe("succeeded");
     expect(db.classifications).toHaveLength(16);
     expect(db.regions.every((r) => r.current_status === "GREEN")).toBe(true);
-    // Evidence is the last 48h of news_items (one row per region per
-    // headline) — the 72h-old item is excluded, and nothing was fetched
-    // from Google News (Workers are blocked there).
-    expect(db.evidence).toHaveLength(16);
-    expect(db.evidence.every((e) => e.source_url === "https://a.pl/fresh")).toBe(true);
+    // Evidence is the last 48h of news_items, stored only against the
+    // regions each headline actually names — "Dron nad Podlasiem" is
+    // Podlaskie only, and the 72h-old item is excluded entirely. Nothing
+    // was fetched from Google News (Workers are blocked there).
+    expect(db.evidence).toHaveLength(1);
+    expect(db.evidence[0]?.source_url).toBe("https://a.pl/fresh");
+    const podlaskie = db.classifications.find((c) => c.region_code === "PL-20");
+    expect(db.evidence[0]?.classification_id).toBe(podlaskie?.id);
   });
 
   it("marks the job run failed and leaves existing region status untouched when TypeSafe AI is unreachable", async () => {

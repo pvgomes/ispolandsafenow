@@ -22,7 +22,9 @@ export interface RegionsPayload {
     majorCities: string[];
     status: RegionWithStatus["currentStatus"];
     lastClassifiedAt: string | null;
-    statusExpiresAt: string | null;
+    /** Short "why this colour" sentence, or `null` before the first classification. */
+    statusReason: string | null;
+    statusDriver: string | null;
   }>;
 }
 
@@ -42,7 +44,8 @@ export async function buildRegionsPayload(db: D1Database): Promise<RegionsPayloa
       majorCities: citiesForRegion(MAJOR_CITIES, region.slug).map((city) => city.name),
       status: region.currentStatus,
       lastClassifiedAt: region.lastClassifiedAt,
-      statusExpiresAt: region.statusExpiresAt,
+      statusReason: region.statusReason,
+      statusDriver: region.statusDriver,
     })),
   };
 }

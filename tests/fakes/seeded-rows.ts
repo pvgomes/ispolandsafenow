@@ -10,6 +10,7 @@ export function buildSeededRows(): FakeRegionRow[] {
     name_en: region.nameEn,
     current_status: "UNKNOWN",
     last_classified_at: null,
-    status_expires_at: null,
+    status_reason: null,
+    status_driver: null,
   }));
 }

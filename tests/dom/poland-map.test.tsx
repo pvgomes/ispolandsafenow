@@ -18,7 +18,7 @@ const regions: MapRegion[] = [
     nameEn: "Dolnoslaskie",
     currentStatus: "GREEN",
     lastClassifiedAt: "2026-01-01T00:00:00.000Z",
-    statusExpiresAt: "2026-01-02T00:00:00.000Z",
+    statusReason: "No incident specific to this region was reported. Based on Poland-wide reporting from the last 48 hours; nothing named Dolnośląskie directly.",
   },
   {
     code: "PL-14",
@@ -27,7 +27,7 @@ const regions: MapRegion[] = [
     nameEn: "Mazowieckie",
     currentStatus: "RED",
     lastClassifiedAt: "2026-01-01T00:00:00.000Z",
-    statusExpiresAt: "2026-01-02T00:00:00.000Z",
+    statusReason: "Drone, missile or airspace activity was reported in or near this region. Based on 3 recent headlines mentioning Mazowieckie.",
   },
   {
     code: "PL-26",
@@ -36,7 +36,7 @@ const regions: MapRegion[] = [
     nameEn: "Swietokrzyskie",
     currentStatus: "UNKNOWN",
     lastClassifiedAt: null,
-    statusExpiresAt: null,
+    statusReason: null,
   },
 ];
 
@@ -74,6 +74,31 @@ describe("PolandMap", () => {
     const panel = screen.getByTestId("region-details-panel");
     expect(within(panel).getByRole("heading", { name: "Mazowieckie" })).toBeInTheDocument();
     expect(within(panel).getByTestId("region-status-badge")).toHaveTextContent("Red");
+  });
+
+  it("explains why the region has its colour, not just the generic level description", async () => {
+    const user = userEvent.setup();
+    render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} />);
+    await user.click(screen.getByTestId("region-mazowieckie"));
+    const panel = screen.getByTestId("region-details-panel");
+    expect(within(panel).getByTestId("region-status-reason")).toHaveTextContent(/airspace activity was reported/i);
+    expect(within(panel).getByTestId("region-status-reason")).toHaveTextContent(/3 recent headlines mentioning Mazowieckie/i);
+  });
+
+  it("falls back to the level description when no reason has been recorded yet", () => {
+    render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} />);
+    fireEvent.keyDown(screen.getByTestId("region-swietokrzyskie"), { key: "Enter" });
+    const panel = screen.getByTestId("region-details-panel");
+    expect(within(panel).getByTestId("region-status-reason")).toBeInTheDocument();
+  });
+
+  it("no longer shows classification or expiry timestamps", async () => {
+    const user = userEvent.setup();
+    render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} />);
+    await user.click(screen.getByTestId("region-mazowieckie"));
+    const panel = screen.getByTestId("region-details-panel");
+    expect(within(panel).queryByText(/Last classified/i)).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/expires/i)).not.toBeInTheDocument();
   });
 
   it("is keyboard-operable: Tab focuses a region, Enter selects it", () => {

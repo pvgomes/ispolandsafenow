@@ -12,7 +12,8 @@ export interface InMemoryRegionRow {
   name_en: string;
   current_status: string;
   last_classified_at: string | null;
-  status_expires_at: string | null;
+  status_reason: string | null;
+  status_driver: string | null;
   updated_at: string;
 }
 
@@ -22,9 +23,9 @@ export interface InMemoryClassificationRow {
   status: string;
   confidence: number | null;
   rationale: string | null;
+  driver: string | null;
   source: string;
   classified_at: string;
-  expires_at: string | null;
   job_run_id: number;
 }
 
@@ -111,13 +112,13 @@ class InMemoryStatement {
     }
 
     if (sql.startsWith("INSERT INTO region_classifications")) {
-      const [regionCode, status, confidence, rationale, classifiedAt, expiresAt, jobRunId] = args as [
+      const [regionCode, status, confidence, rationale, driver, classifiedAt, jobRunId] = args as [
         string,
         string,
         number | null,
         string | null,
-        string,
         string | null,
+        string,
         number,
       ];
       const row: InMemoryClassificationRow = {
@@ -126,9 +127,9 @@ class InMemoryStatement {
         status,
         confidence,
         rationale,
+        driver,
         source: "typesafe-ai",
         classified_at: classifiedAt,
-        expires_at: expiresAt,
         job_run_id: jobRunId,
       };
       this.db.classifications.push(row);
@@ -159,9 +160,10 @@ class InMemoryStatement {
     }
 
     if (sql.startsWith("UPDATE regions")) {
-      const [status, lastClassifiedAt, statusExpiresAt, updatedAt, code] = args as [
+      const [status, lastClassifiedAt, statusReason, statusDriver, updatedAt, code] = args as [
         string,
         string,
+        string | null,
         string | null,
         string,
         string,
@@ -171,7 +173,8 @@ class InMemoryStatement {
         Object.assign(row, {
           current_status: status,
           last_classified_at: lastClassifiedAt,
-          status_expires_at: statusExpiresAt,
+          status_reason: statusReason,
+          status_driver: statusDriver,
           updated_at: updatedAt,
         });
       }
@@ -187,6 +190,18 @@ class InMemoryStatement {
         .filter((r) => since === null || r.published_at >= since)
         .sort((a, b) => b.published_at.localeCompare(a.published_at) || b.id - a.id)
         .slice(offset, offset + limit);
+    }
+
+    if (sql.includes("FROM classification_evidence")) {
+      const [regionCode, limit] = args as [string, number];
+      const latest = [...this.db.classifications]
+        .filter((c) => c.region_code === regionCode)
+        .sort((a, b) => b.classified_at.localeCompare(a.classified_at) || b.id - a.id)[0];
+      if (!latest) return [];
+      return this.db.evidence
+        .filter((e) => e.classification_id === latest.id)
+        .sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""))
+        .slice(0, limit);
     }
 
     if (sql.includes("FROM regions") && sql.includes("WHERE code")) {
