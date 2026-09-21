@@ -23,6 +23,7 @@ Current data mode: live. An hourly scheduled job collects news and calls TypeSaf
 
 - [Homepage](${base}/)
 - [Related news](${base}/news)
+- [Live cameras and news streams](${base}/live)
 - [Methodology](${base}/methodology)
 - [About](${base}/about)
 

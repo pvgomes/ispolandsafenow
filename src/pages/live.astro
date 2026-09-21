@@ -1,0 +1,185 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import LiveDot from "../components/LiveDot.astro";
+import { LIVE_STREAMS } from "../data/live-streams";
+import {
+  selectStream,
+  streamsInCategory,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+  type LiveStream,
+} from "../domain/live-stream";
+
+export const prerender = false;
+
+// `?stream=` keeps a chosen feed shareable and makes the page work without
+// JavaScript: every channel button is a real link back to this page.
+const selected = selectStream(LIVE_STREAMS, Astro.url.searchParams.get("stream"));
+
+const groups: { heading: string; streams: LiveStream[] }[] = [
+  { heading: "Live cameras", streams: streamsInCategory(LIVE_STREAMS, "camera") },
+  { heading: "Live news channels", streams: streamsInCategory(LIVE_STREAMS, "news") },
+].filter((group) => group.streams.length > 0);
+---
+
+<BaseLayout
+  title="Live cameras and news — Is Poland Safe Now?"
+  description="Watch live webcams from Polish cities, mountains and Baltic beaches alongside live Polish news channels, all streamed publicly on YouTube."
+  path="/live"
+>
+  <SiteHeader />
+  <main id="main-content" class="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Live</h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-300">
+        Live webcams and news channels from Poland, streamed on YouTube.
+      </p>
+    </div>
+
+    <section aria-labelledby="live-player-heading" data-live-player>
+      <h2 id="live-player-heading" class="sr-only">Live player</h2>
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-black shadow-sm dark:border-slate-700">
+        <div class="aspect-video w-full">
+          <iframe
+            data-live-frame
+            class="h-full w-full"
+            src={youtubeEmbedUrl(selected.videoId)}
+            title={selected.title}
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h3 class="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <span data-live-title>{selected.title}</span>
+          <LiveDot />
+        </h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          <span data-live-description>{selected.description}</span>
+        </p>
+      </div>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Source:
+        <a
+          class="underline underline-offset-2"
+          href={selected.channelUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-live-channel-link
+        >
+          <span data-live-channel>{selected.channelName}</span>
+        </a>
+        ·
+        <a
+          class="underline underline-offset-2"
+          href={youtubeWatchUrl(selected.videoId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-live-watch-link
+        >
+          Watch on YouTube
+        </a>
+      </p>
+    </section>
+
+    {
+      groups.map((group) => (
+        <section aria-labelledby={`live-group-${group.heading.replace(/\s+/g, "-").toLowerCase()}`}>
+          <h2
+            id={`live-group-${group.heading.replace(/\s+/g, "-").toLowerCase()}`}
+            class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
+            {group.heading}
+          </h2>
+          <ul class="mt-2 flex flex-wrap gap-2">
+            {group.streams.map((stream) => (
+              <li>
+                <a
+                  href={`/live?stream=${stream.slug}`}
+                  class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 aria-[current=true]:border-red-500 aria-[current=true]:bg-red-50 aria-[current=true]:text-red-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white dark:aria-[current=true]:border-red-500 dark:aria-[current=true]:bg-red-950 dark:aria-[current=true]:text-red-300"
+                  data-live-channel-button
+                  data-slug={stream.slug}
+                  data-video-id={stream.videoId}
+                  data-title={stream.title}
+                  data-description={stream.description}
+                  data-channel={stream.channelName}
+                  data-channel-url={stream.channelUrl}
+                  aria-current={stream.slug === selected.slug ? "true" : undefined}
+                >
+                  {stream.title}
+                  <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                    {stream.badge}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+
+    <p class="text-sm text-slate-500 dark:text-slate-400">
+      <a class="underline underline-offset-2" href="/">&larr; Back to the map</a>
+    </p>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<script>
+  // Swap the single player in place instead of reloading the page, so the
+  // stream stays open while the visitor switches channels. Without JS the
+  // buttons stay ordinary links to /live?stream=…, so the page still works.
+  function initLivePlayer() {
+    const frame = document.querySelector<HTMLIFrameElement>("[data-live-frame]");
+    const buttons = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-live-channel-button]"));
+    if (!frame || buttons.length === 0) return;
+
+    const titleEl = document.querySelector<HTMLElement>("[data-live-title]");
+    const descriptionEl = document.querySelector<HTMLElement>("[data-live-description]");
+    const channelEl = document.querySelector<HTMLElement>("[data-live-channel]");
+    const channelLink = document.querySelector<HTMLAnchorElement>("[data-live-channel-link]");
+    const watchLink = document.querySelector<HTMLAnchorElement>("[data-live-watch-link]");
+
+    function select(button: HTMLAnchorElement, pushState: boolean) {
+      const videoId = button.dataset.videoId;
+      const slug = button.dataset.slug;
+      if (!videoId || !slug) return;
+
+      const params = new URLSearchParams({ rel: "0", playsinline: "1", autoplay: "1", mute: "1" });
+      frame!.src = `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+      frame!.title = button.dataset.title ?? "";
+
+      if (titleEl) titleEl.textContent = button.dataset.title ?? "";
+      if (descriptionEl) descriptionEl.textContent = button.dataset.description ?? "";
+      if (channelEl) channelEl.textContent = button.dataset.channel ?? "";
+      if (channelLink && button.dataset.channelUrl) channelLink.href = button.dataset.channelUrl;
+      if (watchLink) watchLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+
+      for (const other of buttons) {
+        if (other === button) other.setAttribute("aria-current", "true");
+        else other.removeAttribute("aria-current");
+      }
+
+      if (pushState) history.pushState({ slug }, "", `/live?stream=${slug}`);
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        select(button, true);
+      });
+    }
+
+    window.addEventListener("popstate", () => {
+      const slug = new URLSearchParams(window.location.search).get("stream");
+      const button = buttons.find((b) => b.dataset.slug === slug) ?? buttons[0];
+      if (button) select(button, false);
+    });
+  }
+
+  initLivePlayer();
+</script>

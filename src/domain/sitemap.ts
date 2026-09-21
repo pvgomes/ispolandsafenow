@@ -43,6 +43,7 @@ export function buildSitemapEntries({ site, regions, latestNews }: SitemapInput)
       changefreq: "hourly",
       priority: 0.7,
     })),
+    { loc: `${base}/live`, changefreq: "monthly", priority: 0.6 },
     { loc: `${base}/methodology`, changefreq: "monthly", priority: 0.5 },
     { loc: `${base}/about`, changefreq: "monthly", priority: 0.4 },
   ];

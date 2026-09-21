@@ -34,7 +34,8 @@ describe("buildSitemapEntries", () => {
     }));
     const entries = buildSitemapEntries({ site: SITE, regions, latestNews: null });
     const locs = entries.map((e) => e.loc);
-    expect(locs).toHaveLength(4 + REGIONS.length);
+    expect(locs).toHaveLength(5 + REGIONS.length);
+    expect(locs).toContain("https://ispolandsafenow.com/live");
     expect(new Set(locs).size).toBe(locs.length);
     expect(locs[0]).toBe("https://ispolandsafenow.com/");
     expect(locs).toContain("https://ispolandsafenow.com/regions/mazowieckie");
@@ -74,7 +75,7 @@ describe("GET /sitemap.xml logic", () => {
       { id: 1, url: "https://n.pl/1", title: "t", title_en: null, source_name: null, published_at: "2026-09-19T11:30:00.000Z" },
     ]);
     const xml = await buildSitemap(db as never, SITE);
-    expect(xml.match(/<url>/g)).toHaveLength(4 + REGIONS.length);
+    expect(xml.match(/<url>/g)).toHaveLength(5 + REGIONS.length);
     expect(xml).toContain("<loc>https://ispolandsafenow.com/news</loc>\n    <lastmod>2026-09-19T11:30:00.000Z</lastmod>");
   });
 });
