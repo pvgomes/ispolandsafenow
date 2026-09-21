@@ -13,6 +13,8 @@ export interface ClassificationJobResult {
   readonly status: "succeeded" | "failed";
   readonly regionCount?: number;
   readonly counts?: Record<string, number>;
+  /** Regions left untouched because this run produced no usable answer for them. */
+  readonly skippedRegions?: string[];
   readonly error?: string;
 }
 
@@ -46,7 +48,12 @@ export default {
   },
 };
 
-export async function runClassificationJob(env: Env): Promise<ClassificationJobResult> {
+export interface ClassificationJobOptions {
+  /** Retry backoff for the upstream call; overridable so tests don't wait. */
+  readonly retryDelaysMs?: readonly number[];
+}
+
+export async function runClassificationJob(env: Env, options: ClassificationJobOptions = {}): Promise<ClassificationJobResult> {
   const writer = new ClassificationWriter(env.DB);
   const jobRunId = await writer.startJobRun(JOB_TYPE);
 
@@ -57,9 +64,15 @@ export async function runClassificationJob(env: Env): Promise<ClassificationJobR
     // so this Worker deliberately never fetches RSS itself.
     const newsRepository = new NewsRepository(env.DB);
     const since = new Date(Date.parse(asOf) - EVIDENCE_LOOKBACK_MS).toISOString();
-    const service = new TypeSafeAiClassificationService(env.TYPESAFE_AI_API_KEY, () =>
-      newsRepository.listPublishedSince(since, EVIDENCE_LIMIT),
+    const service = new TypeSafeAiClassificationService(
+      env.TYPESAFE_AI_API_KEY,
+      () => newsRepository.listPublishedSince(since, EVIDENCE_LIMIT),
+      options.retryDelaysMs,
     );
+    // Throws ClassificationUnavailableError if the pipeline itself failed,
+    // and omits any region it has no usable answer for. Both cases mean
+    // "we learned nothing about those regions", so nothing is written for
+    // them and their stored status is left exactly as it was.
     const classifications = await service.classifyRegions({ regions: REGIONS, asOf });
 
     for (const classification of classifications) {
@@ -69,8 +82,11 @@ export async function runClassificationJob(env: Env): Promise<ClassificationJobR
     const counts: Record<string, number> = {};
     for (const c of classifications) counts[c.status] = (counts[c.status] ?? 0) + 1;
 
-    await writer.finishJobRun(jobRunId, "succeeded", { regionCount: classifications.length, counts });
-    return { status: "succeeded", regionCount: classifications.length, counts };
+    const classified = new Set(classifications.map((c) => c.regionCode));
+    const skippedRegions = REGIONS.filter((r) => !classified.has(r.code)).map((r) => r.code);
+
+    await writer.finishJobRun(jobRunId, "succeeded", { regionCount: classifications.length, counts, skippedRegions });
+    return { status: "succeeded", regionCount: classifications.length, counts, skippedRegions };
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
     console.error("[scheduler] classification job failed:", message);
@@ -78,7 +94,8 @@ export async function runClassificationJob(env: Env): Promise<ClassificationJobR
     // Deliberately not re-thrown: a failed run leaves existing regions at
     // their last good status until it naturally expires (see
     // resolveEffectiveStatus) rather than forcing UNKNOWN immediately —
-    // one missed hourly run shouldn't blank out the whole site.
+    // one missed hourly run shouldn't blank out the whole site. The
+    // failure is still recorded on the job_runs row for diagnosis.
     return { status: "failed", error: message };
   }
 }

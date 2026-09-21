@@ -91,14 +91,25 @@ jobs:
           echo "::add-mask::$trigger_secret"
           printf '%s' "$trigger_secret" | npx wrangler secret put SCHEDULER_TRIGGER_SECRET --config scheduler/wrangler.jsonc
 
-          http_status=$(curl -sS -o /tmp/trigger-response.json -w '%{http_code}' -X POST \
-            "${{ steps.deploy_scheduler.outputs.url }}/trigger" \
-            -H "x-trigger-secret: $trigger_secret")
-          echo "Trigger response (HTTP $http_status):"
-          cat /tmp/trigger-response.json
-          echo
+          # A freshly uploaded secret takes a few seconds to reach the
+          # running Worker, so an immediate call can legitimately come back
+          # 401/5xx. Retry with backoff instead of giving up on the first try.
+          http_status=000
+          for attempt in 1 2 3 4 5; do
+            http_status=$(curl -sS -o /tmp/trigger-response.json -w '%{http_code}' -X POST \
+              "${{ steps.deploy_scheduler.outputs.url }}/trigger" \
+              -H "x-trigger-secret: $trigger_secret" || echo 000)
+            echo "Trigger attempt $attempt (HTTP $http_status):"
+            cat /tmp/trigger-response.json || true
+            echo
+            if [ "$http_status" = "200" ]; then
+              break
+            fi
+            sleep $((attempt * 5))
+          done
+
           if [ "$http_status" != "200" ]; then
-            echo "Classification job did not succeed — see the response above (e.g. TYPESAFE_AI_API_KEY not yet configured)." >&2
+            echo "Classification job did not succeed — see the response above (e.g. TYPESAFE_AI_API_KEY not configured, or TypeSafe AI unavailable). The hourly cron will retry; existing statuses are left untouched." >&2
           fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

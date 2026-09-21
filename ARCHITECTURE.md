@@ -108,17 +108,30 @@ The model is only ever offered three choices — GREEN, YELLOW, RED — and
 GREEN ("no elevated regional signal found") is the correct, expected
 answer for most regions on most days: it means the evidence was checked
 and nothing concerning was found, not "we don't know." `UNKNOWN` is never
-one of the model's choices; it is reserved entirely for this app's own
-pipeline-failure paths: `TYPESAFE_AI_API_KEY` missing, the request
-failing, a non-2xx response, unparseable JSON, or a missing/unrecognized
-answer for a region. `resolveEffectiveStatus` (`src/domain/region.ts`,
-applied when `RegionRepository` reads a row) adds one more `UNKNOWN` path
-unrelated to the AI call: a classification whose `status_expires_at` (2
-hours after `classified_at`) has passed — i.e. the hourly scheduler
-missed a run or two — also resolves to `UNKNOWN` rather than showing a
-frozen, possibly-outdated status forever. The invariant this app is built
-around ("missing or untrustworthy data must never resolve to GREEN")
-lives at these two boundaries now, not in the model's own judgment calls.
+one of the model's choices.
+
+A **pipeline failure writes nothing at all**. If `TYPESAFE_AI_API_KEY` is
+missing, the request fails, the upstream returns a non-2xx after retries
+(transient 429/5xx/network errors are retried up to 3 times with
+backoff), the body is unparseable, or no region got a usable answer, the
+service raises `ClassificationUnavailableError`; the scheduler records a
+`failed` job run and leaves every `regions` row exactly as it was. A
+region whose individual answer is missing or unrecognized is likewise
+omitted from the result and left untouched. This is deliberate: on
+2026-09-21T07:00Z a single upstream HTTP 503 overwrote a healthy
+14×GREEN/2×YELLOW map with 16×UNKNOWN (and `status_expires_at = NULL`,
+so it could not even age out), which is exactly the failure mode this
+design prevents.
+
+`UNKNOWN` therefore reaches the site through one route only:
+`resolveEffectiveStatus` (`src/domain/region.ts`, applied when
+`RegionRepository` reads a row), where a classification whose
+`status_expires_at` (2 hours after `classified_at`) has passed — i.e. the
+hourly scheduler missed a couple of runs — resolves to `UNKNOWN` rather
+than showing a frozen, possibly-outdated status forever. The invariant
+this app is built around ("missing or untrustworthy data must never
+resolve to GREEN") lives at that boundary, not in the model's own
+judgment calls.
 Every page and API response is stamped `"mode": "live"`.
 
 ## The Cloudflare build/dev model (a note on `wrangler.jsonc`)

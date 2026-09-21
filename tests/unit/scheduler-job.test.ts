@@ -16,6 +16,9 @@ function seedAllRegions(): InMemoryRegionRow[] {
   }));
 }
 
+/** Keeps retry-path tests instant. */
+const NO_BACKOFF = [0, 0];
+
 const NOW = Date.now();
 const hoursAgo = (h: number) => new Date(NOW - h * 60 * 60 * 1000).toISOString();
 
@@ -68,24 +71,73 @@ describe("runClassificationJob (scheduler)", () => {
     const db = new InMemoryD1Database(seeded);
     const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
 
-    await runClassificationJob(env);
+    const result = await runClassificationJob(env, { retryDelaysMs: NO_BACKOFF });
 
-    // The service itself resolves every region to UNKNOWN on a fetch
-    // failure, but the writer never got that far here — the failure
-    // happens after startJobRun but classifyRegions still returns
-    // UNKNOWN results, which DO get written (that's a real, if
-    // unfortunate, classification result, not a writer crash).
+    expect(result.status).toBe("failed");
     expect(db.jobRuns).toHaveLength(1);
-    expect(db.jobRuns[0]?.status).toBe("succeeded");
-    expect(db.regions.every((r) => r.current_status === "UNKNOWN")).toBe(true);
+    expect(db.jobRuns[0]?.status).toBe("failed");
+    // Nothing is written: the previous GREEN stands until it expires on
+    // its own, rather than the whole map being blanked to UNKNOWN.
+    expect(db.classifications).toHaveLength(0);
+    expect(db.regions[0]?.current_status).toBe("GREEN");
+  });
+
+  it("leaves every region untouched when a transient upstream 503 persists (the 2026-09-21 incident)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("upstream unavailable", { status: 503 })),
+    );
+
+    const seeded = seedAllRegions();
+    seeded[0]!.current_status = "GREEN";
+    seeded[0]!.last_classified_at = "2026-01-01T00:00:00.000Z";
+    seeded[1]!.current_status = "YELLOW";
+    seeded[1]!.last_classified_at = "2026-01-01T00:00:00.000Z";
+    const db = new InMemoryD1Database(seeded);
+    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
+
+    const result = await runClassificationJob(env, { retryDelaysMs: NO_BACKOFF });
+
+    expect(result.status).toBe("failed");
+    expect(result.error).toMatch(/HTTP 503/);
+    expect(db.classifications).toHaveLength(0);
+    expect(db.regions[0]?.current_status).toBe("GREEN");
+    expect(db.regions[1]?.current_status).toBe("YELLOW");
+  });
+
+  it("writes only the regions that were answered and leaves the rest untouched", async () => {
+    const answers: Record<string, unknown> = {};
+    for (const r of REGIONS.slice(0, 15)) answers[r.code] = { type: "choice", choice: "GREEN" };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 })),
+    );
+
+    const seeded = seedAllRegions();
+    const lastRegion = REGIONS[15]!;
+    const lastRow = seeded.find((r) => r.code === lastRegion.code)!;
+    lastRow.current_status = "YELLOW";
+    lastRow.last_classified_at = "2026-01-01T00:00:00.000Z";
+    const db = new InMemoryD1Database(seeded);
+    const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
+
+    const result = await runClassificationJob(env, { retryDelaysMs: NO_BACKOFF });
+
+    expect(result.status).toBe("succeeded");
+    expect(result.regionCount).toBe(15);
+    expect(result.skippedRegions).toEqual([lastRegion.code]);
+    expect(db.classifications).toHaveLength(15);
+    expect(db.regions.find((r) => r.code === lastRegion.code)?.current_status).toBe("YELLOW");
   });
 
   it("marks the job run failed without touching regions when the writer itself throws", async () => {
+    const answers: Record<string, unknown> = {};
+    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "GREEN" };
+
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => {
-        return new Response(JSON.stringify({ model: "jev-latest", answers: {} }), { status: 200 });
-      }),
+      vi.fn(async () => new Response(JSON.stringify({ model: "jev-latest", answers }), { status: 200 })),
     );
 
     const seeded = seedAllRegions();

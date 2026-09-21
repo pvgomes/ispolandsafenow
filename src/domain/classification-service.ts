@@ -45,3 +45,22 @@ export interface ClassificationInput {
 export interface ClassificationService {
   classifyRegions(input: ClassificationInput): Promise<RegionClassification[]>;
 }
+
+/**
+ * Thrown when the classification pipeline itself could not produce an
+ * assessment (no API key, upstream unreachable, upstream error response,
+ * unparseable body, no usable answer for any region).
+ *
+ * This is deliberately an error rather than a list of UNKNOWN results: a
+ * pipeline failure says nothing about the regions, so the caller must
+ * leave the stored statuses exactly as they are and let them expire
+ * naturally (see `resolveEffectiveStatus`). Writing UNKNOWN here would
+ * turn one transient upstream hiccup — e.g. the HTTP 503 seen on
+ * 2026-09-21T07:00Z — into a blank map until the next successful run.
+ */
+export class ClassificationUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ClassificationUnavailableError";
+  }
+}

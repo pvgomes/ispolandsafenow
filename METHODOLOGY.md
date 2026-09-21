@@ -28,11 +28,15 @@ judgment:
 
 1. **Pipeline failures**, in `TypeSafeAiClassificationService`
    (`src/domain/typesafe-ai-classification-service.ts`): no
-   `TYPESAFE_AI_API_KEY` configured, the request to TypeSafe AI fails, a
-   non-2xx response, unparseable JSON, or a missing/unrecognized answer
-   for a region. The model itself is only ever offered GREEN/YELLOW/RED
-   as choices — `UNKNOWN` is not something it can pick, it's what this
-   code returns when the call didn't work.
+   `TYPESAFE_AI_API_KEY` configured, the request to TypeSafe AI failing,
+   a non-2xx response after retries, unparseable JSON, or no usable
+   answer for any region. The model itself is only ever offered
+   GREEN/YELLOW/RED as choices — `UNKNOWN` is not something it can pick.
+   A failed run does **not** publish `UNKNOWN`: it raises
+   `ClassificationUnavailableError`, is recorded as a `failed` job run,
+   and every stored status is left untouched, so a momentary upstream
+   outage can no longer blank the map. Those statuses then age out
+   through the staleness rule below if the outage lasts.
 2. **Staleness**, in `resolveEffectiveStatus` (`src/domain/region.ts`,
    applied when `RegionRepository` reads a row): a classification whose
    `status_expires_at` has passed — meaning the hourly scheduler missed a
