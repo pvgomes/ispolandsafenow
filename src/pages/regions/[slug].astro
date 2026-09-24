@@ -10,6 +10,9 @@ import { MAJOR_CITIES } from "../../data/cities";
 import { capitalOfRegion, citiesForRegion, formatCityList } from "../../domain/city";
 import { formatShortDate } from "../../domain/format-news-date";
 import { STATUS_DRIVERS } from "../../domain/status-reason";
+import { englishAlias } from "../../domain/region";
+import FaqSection from "../../components/FaqSection.astro";
+import { buildRegionFaq, faqPageJsonLd } from "../../domain/faq";
 import { env } from "cloudflare:workers";
 
 /** How many stories are listed as the reason for the current colour. */
@@ -47,15 +50,28 @@ const relatedNews: RegionEvidence[] = isRegionSpecific
 const cities = region ? citiesForRegion(MAJOR_CITIES, region.slug) : [];
 const capital = region ? capitalOfRegion(MAJOR_CITIES, region.slug) : undefined;
 const cityNames = cities.map((city) => city.name);
+const regionEnglishName = region ? englishAlias(region) : undefined;
+const regionTravelName = region ? (regionEnglishName ? `${region.namePl} (${regionEnglishName})` : region.namePl) : "";
 
 const pageTitle = region
-  ? `${region.namePl}${capital ? ` (${capital.name})` : ""} security status — Is Poland Safe Now?`
+  ? `Is ${region.namePl}${capital ? ` (${capital.name})` : ""} safe right now? — Is Poland Safe Now?`
   : "Region not found — Is Poland Safe Now?";
 const cityPhrase = cityNames.length > 0 ? `, home to ${cityNames.slice(0, 3).join(", ")}` : "";
 const pageDescription =
   region && presentation
-    ? `AI-assisted security-alert status for ${region.namePl} (${region.nameEn}), one of Poland's 16 voivodeships${cityPhrase}: ${presentation.label} — ${region.statusReason ?? presentation.description}`
+    ? `Is it safe to travel to ${regionTravelName} right now? Hourly-updated security status for this Polish voivodeship${cityPhrase}: ${presentation.label} — ${region.statusReason ?? presentation.description}`
     : "This voivodeship could not be found.";
+
+const faqEntries = region
+  ? buildRegionFaq({
+      namePl: region.namePl,
+      englishName: regionEnglishName,
+      currentStatus: region.currentStatus,
+      statusReason: region.statusReason,
+      capitalName: capital?.name,
+      cityNames,
+    })
+  : [];
 
 const placeJsonLd = region
   ? [
@@ -72,6 +88,7 @@ const placeJsonLd = region
           value: region.currentStatus,
         },
       },
+      faqPageJsonLd(faqEntries),
     ]
   : [];
 ---
@@ -94,7 +111,9 @@ const placeJsonLd = region
       <>
         <main id="main-content" class="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
           <div>
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">{region.namePl}</h1>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">
+              Is {region.namePl} safe right now?
+            </h1>
             <p class="text-slate-500 dark:text-slate-400">
               {region.nameEn} · Voivodeship code {region.code}
             </p>
@@ -174,6 +193,11 @@ const placeJsonLd = region
               </a>
             </p>
           </section>
+
+          <FaqSection
+            entries={faqEntries}
+            heading={`Is it safe to travel to ${region.namePl}? Common questions`}
+          />
 
           <p class="text-sm text-slate-500 dark:text-slate-400">
             <a class="underline underline-offset-2" href="/">

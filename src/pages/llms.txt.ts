@@ -27,6 +27,15 @@ Current data mode: live. An hourly scheduled job collects news and calls TypeSaf
 - [Methodology](${base}/methodology)
 - [About](${base}/about)
 
+## Questions this site answers
+
+- Is Poland safe to visit right now? — the homepage shows the current status of all 16 voivodeships, refreshed hourly.
+- Is it safe to travel to Poland because of Russia or the war in Ukraine? — Poland is a NATO/EU member and is not at war; effects are regional (airspace incidents, border activity, transport disruption) and tracked per voivodeship.
+- Is Poland at war? — no; there is no armed conflict on Polish territory.
+- Is it safe to travel to a specific Polish city (Warsaw, Kraków, Gdańsk, Wrocław, Zakopane, ...)? — use the region list below to map the city to its voivodeship page.
+- Is it safe to fly to Poland right now? — airports normally operate as usual, but eastern airspace has been closed temporarily during past incidents.
+- How often is the status updated? — every hour, from public news reporting; see /methodology.
+
 ## Public API
 
 - [GET /api/health](${base}/api/health) — service and database health

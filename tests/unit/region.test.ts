@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveEffectiveStatus } from "../../src/domain/region";
+import { englishAlias, resolveEffectiveStatus } from "../../src/domain/region";
 
 describe("resolveEffectiveStatus", () => {
   it("resolves to UNKNOWN when never classified", () => {
@@ -30,5 +30,18 @@ describe("resolveEffectiveStatus", () => {
       statusDriver: null,
     });
     expect(status).toBe("YELLOW");
+  });
+});
+
+describe("englishAlias", () => {
+  it("returns the bracketed English exonym", () => {
+    expect(englishAlias({ namePl: "Mazowieckie", nameEn: "Mazowieckie (Masovia)" })).toBe("Masovia");
+    expect(englishAlias({ namePl: "Dolnośląskie", nameEn: "Dolnoslaskie (Lower Silesia)" })).toBe("Lower Silesia");
+  });
+
+  it("returns undefined when the English name only transliterates the Polish one", () => {
+    expect(englishAlias({ namePl: "Podlaskie", nameEn: "Podlaskie" })).toBeUndefined();
+    expect(englishAlias({ namePl: "Łódzkie", nameEn: "Lodzkie" })).toBeUndefined();
+    expect(englishAlias({ namePl: "Warmińsko-Mazurskie", nameEn: "Warminsko-Mazurskie" })).toBeUndefined();
   });
 });

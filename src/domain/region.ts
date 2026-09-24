@@ -13,6 +13,26 @@ export interface RegionIdentity {
   readonly nameEn: string;
 }
 
+/**
+ * The English name people actually search for, when it differs from the
+ * Polish one — "Masovia" for Mazowieckie, "Lower Silesia" for Dolnośląskie.
+ * `nameEn` is stored as either a plain transliteration ("Podlaskie") or a
+ * transliteration with the English exonym in brackets ("Mazowieckie
+ * (Masovia)"); only the bracketed part adds anything for a reader, so this
+ * returns it, or `undefined` when there is nothing extra to say.
+ */
+export function englishAlias(region: Pick<RegionIdentity, "namePl" | "nameEn">): string | undefined {
+  const bracketed = /\(([^)]+)\)/.exec(region.nameEn)?.[1]?.trim();
+  const candidate = bracketed ?? region.nameEn.trim();
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ł/g, "l");
+  return candidate.length > 0 && normalize(candidate) !== normalize(region.namePl) ? candidate : undefined;
+}
+
 /** A region's current classification as stored/read from D1. */
 export interface RegionStatus {
   readonly currentStatus: AlertLevel;

@@ -9,6 +9,8 @@ import EmergencyGuidance from "../components/EmergencyGuidance.astro";
 import PolandMap from "../components/PolandMap";
 import NewsTicker from "../components/NewsTicker.astro";
 import LiveDot from "../components/LiveDot.astro";
+import FaqSection from "../components/FaqSection.astro";
+import { buildNationalFaq, faqPageJsonLd } from "../domain/faq";
 import mapSvgSource from "../assets/maps/poland-voivodeships.svg?raw";
 import { parseMapSvg, projectPoint } from "../domain/parse-map-svg";
 import { MAJOR_CITIES } from "../data/cities";
@@ -42,18 +44,28 @@ const datasetJsonLd = {
   },
   variableMeasured: "AlertLevel (GREEN, YELLOW, RED, UNKNOWN)",
 };
+
+const faqEntries = buildNationalFaq(nationalSummary, lastUpdated);
 ---
 
 <BaseLayout
-  title="Is Poland Safe Now? — Regional security-alert overview"
-  description="An independent, AI-assisted overview of security-alert exposure across Poland's 16 voivodeships, covering the Russia-Ukraine war, Belarus border activity, Kaliningrad, and airspace incidents."
+  title="Is Poland Safe Now? Is It Safe to Travel to Poland Right Now?"
+  description="Is Poland safe to visit right now? Live, hourly-updated safety status for all 16 Polish voivodeships — covering the war in Ukraine, Russia and Belarus border activity, Kaliningrad, drones and airspace incidents. Independent, AI-assisted, not an official warning system."
   path="/"
-  structuredData={[datasetJsonLd]}
+  structuredData={[datasetJsonLd, faqPageJsonLd(faqEntries)]}
 >
   <SiteHeader />
 
   <main id="main-content" class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
-    <h1 class="sr-only">Is Poland Safe Now?</h1>
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Is Poland safe to visit right now?</h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-300">
+        A live, independent answer for travellers and residents: the current security status of every Polish
+        voivodeship, updated every hour from public news about the war in Ukraine, Russian and Belarusian border
+        activity, Kaliningrad, drones and airspace incidents. Poland is not at war — but the picture is regional, so
+        pick your region on the map below.
+      </p>
+    </div>
 
     <section aria-labelledby="news-ticker-heading">
       <h2
@@ -91,6 +103,8 @@ const datasetJsonLd = {
       heading="24-hour security outlook"
       note="Coming soon: a cautious, AI-assisted outlook for the next 24 hours once the classification pipeline is live."
     />
+
+    <FaqSection entries={faqEntries} heading="Is it safe to travel to Poland? Common questions" />
 
     <EmergencyGuidance />
   </main>
