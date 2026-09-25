@@ -31,13 +31,28 @@ import SiteFooter from "../components/SiteFooter.astro";
 
     <section>
       <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Status levels</h2>
+      <p class="mt-2">
+        The scale is deliberately weighted towards the calm end. Most of Poland, most of the time, is simply going
+        about its day, so routine news does not move a region up the scale, and red is kept for an actual attack.
+      </p>
       <ul class="mt-2 list-inside list-disc space-y-1">
-        <li><strong>Green</strong> — no elevated regional signal found.</li>
-        <li><strong>Yellow</strong> — elevated situation requiring attention.</li>
-        <li><strong>Red</strong> — serious active warning or confirmed incident.</li>
+        <li><strong>Calm</strong> (dark green) — nothing notable reported; the normal, everyday situation.</li>
+        <li>
+          <strong>Low</strong> (green) — minor or indirect signals only, such as routine military exercises,
+          political news, or an incident elsewhere in Poland. Nothing that changes daily life here.
+        </li>
+        <li>
+          <strong>Elevated</strong> (yellow) — a current situation worth paying attention to in this region, such as
+          an airspace violation, a closed airport, or an official warning — with nothing striking the ground.
+        </li>
+        <li>
+          <strong>Critical</strong> (red) — only when something physically hit the ground here: a strike, explosion,
+          crash or falling debris causing damage, casualties or wreckage. Threats, overflights and intercepted
+          objects do not turn a region red.
+        </li>
         <li>
           <strong>Unknown</strong> — missing, stale, conflicting, or insufficient information. Missing data always
-          resolves to Unknown, never Green.
+          resolves to Unknown, never Calm.
         </li>
       </ul>
     </section>

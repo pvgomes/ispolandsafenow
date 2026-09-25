@@ -16,7 +16,7 @@ const regions: MapRegion[] = [
     slug: "dolnoslaskie",
     namePl: "Dolnośląskie",
     nameEn: "Dolnoslaskie",
-    currentStatus: "GREEN",
+    currentStatus: "CALM",
     lastClassifiedAt: "2026-01-01T00:00:00.000Z",
     statusReason: "No incident specific to this region was reported. Based on Poland-wide reporting from the last 48 hours; nothing named Dolnośląskie directly.",
   },
@@ -25,7 +25,7 @@ const regions: MapRegion[] = [
     slug: "mazowieckie",
     namePl: "Mazowieckie",
     nameEn: "Mazowieckie",
-    currentStatus: "RED",
+    currentStatus: "ELEVATED",
     lastClassifiedAt: "2026-01-01T00:00:00.000Z",
     statusReason: "Drone, missile or airspace activity was reported in or near this region. Based on 3 recent headlines mentioning Mazowieckie.",
   },
@@ -56,8 +56,8 @@ describe("PolandMap", () => {
 
   it("labels each region with its status text", () => {
     render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} />);
-    expect(screen.getByRole("button", { name: /Mazowieckie: Red/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Dolnośląskie: Green/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Mazowieckie: Elevated/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Dolnośląskie: Calm/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Świętokrzyskie: Unknown/i })).toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe("PolandMap", () => {
     await user.click(screen.getByTestId("region-mazowieckie"));
     const panel = screen.getByTestId("region-details-panel");
     expect(within(panel).getByRole("heading", { name: "Mazowieckie" })).toBeInTheDocument();
-    expect(within(panel).getByTestId("region-status-badge")).toHaveTextContent("Red");
+    expect(within(panel).getByTestId("region-status-badge")).toHaveTextContent("Elevated");
   });
 
   it("explains why the region has its colour, not just the generic level description", async () => {
@@ -124,7 +124,7 @@ describe("PolandMap", () => {
     render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} />);
     const unknownPath = screen.getByTestId("region-swietokrzyskie");
     expect(unknownPath).toHaveAttribute("data-status", "UNKNOWN");
-    expect(unknownPath.getAttribute("class")).not.toMatch(/fill-status-green/);
+    expect(unknownPath.getAttribute("class")).not.toMatch(/fill-status-calm/);
   });
 
   it("falls back to UNKNOWN styling for a mapped region with no status data at all", () => {
@@ -161,7 +161,7 @@ describe("PolandMap", () => {
 
     it("mentions main cities in the region's accessible name", () => {
       render(<PolandMap viewBox="0 0 10 10" paths={paths} regions={regions} cities={cities} />);
-      expect(screen.getByRole("button", { name: /Mazowieckie: Red.*Main cities: Warsaw \(capital\), Radom/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Mazowieckie: Elevated.*Main cities: Warsaw \(capital\), Radom/i })).toBeInTheDocument();
     });
 
     it("lists main cities in the details panel, capital first", async () => {

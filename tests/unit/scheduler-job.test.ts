@@ -35,7 +35,7 @@ describe("runClassificationJob (scheduler)", () => {
 
   it("classifies all 16 regions and persists a succeeded job run", async () => {
     const answers: Record<string, unknown> = {};
-    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "GREEN" };
+    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "CALM" };
 
     vi.stubGlobal(
       "fetch",
@@ -50,7 +50,7 @@ describe("runClassificationJob (scheduler)", () => {
     expect(db.jobRuns).toHaveLength(1);
     expect(db.jobRuns[0]?.status).toBe("succeeded");
     expect(db.classifications).toHaveLength(16);
-    expect(db.regions.every((r) => r.current_status === "GREEN")).toBe(true);
+    expect(db.regions.every((r) => r.current_status === "CALM")).toBe(true);
     // Evidence is the last 48h of news_items, stored only against the
     // regions each headline actually names — "Dron nad Podlasiem" is
     // Podlaskie only, and the 72h-old item is excluded entirely. Nothing
@@ -70,7 +70,7 @@ describe("runClassificationJob (scheduler)", () => {
     );
 
     const seeded = seedAllRegions();
-    seeded[0]!.current_status = "GREEN";
+    seeded[0]!.current_status = "CALM";
     seeded[0]!.last_classified_at = "2026-01-01T00:00:00.000Z";
     const db = new InMemoryD1Database(seeded);
     const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
@@ -80,10 +80,10 @@ describe("runClassificationJob (scheduler)", () => {
     expect(result.status).toBe("failed");
     expect(db.jobRuns).toHaveLength(1);
     expect(db.jobRuns[0]?.status).toBe("failed");
-    // Nothing is written: the previous GREEN stands until it expires on
+    // Nothing is written: the previous CALM stands until it expires on
     // its own, rather than the whole map being blanked to UNKNOWN.
     expect(db.classifications).toHaveLength(0);
-    expect(db.regions[0]?.current_status).toBe("GREEN");
+    expect(db.regions[0]?.current_status).toBe("CALM");
   });
 
   it("leaves every region untouched when a transient upstream 503 persists (the 2026-09-21 incident)", async () => {
@@ -93,9 +93,9 @@ describe("runClassificationJob (scheduler)", () => {
     );
 
     const seeded = seedAllRegions();
-    seeded[0]!.current_status = "GREEN";
+    seeded[0]!.current_status = "CALM";
     seeded[0]!.last_classified_at = "2026-01-01T00:00:00.000Z";
-    seeded[1]!.current_status = "YELLOW";
+    seeded[1]!.current_status = "LOW";
     seeded[1]!.last_classified_at = "2026-01-01T00:00:00.000Z";
     const db = new InMemoryD1Database(seeded);
     const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
@@ -105,13 +105,13 @@ describe("runClassificationJob (scheduler)", () => {
     expect(result.status).toBe("failed");
     expect(result.error).toMatch(/HTTP 503/);
     expect(db.classifications).toHaveLength(0);
-    expect(db.regions[0]?.current_status).toBe("GREEN");
-    expect(db.regions[1]?.current_status).toBe("YELLOW");
+    expect(db.regions[0]?.current_status).toBe("CALM");
+    expect(db.regions[1]?.current_status).toBe("LOW");
   });
 
   it("writes only the regions that were answered and leaves the rest untouched", async () => {
     const answers: Record<string, unknown> = {};
-    for (const r of REGIONS.slice(0, 15)) answers[r.code] = { type: "choice", choice: "GREEN" };
+    for (const r of REGIONS.slice(0, 15)) answers[r.code] = { type: "choice", choice: "CALM" };
 
     vi.stubGlobal(
       "fetch",
@@ -121,7 +121,7 @@ describe("runClassificationJob (scheduler)", () => {
     const seeded = seedAllRegions();
     const lastRegion = REGIONS[15]!;
     const lastRow = seeded.find((r) => r.code === lastRegion.code)!;
-    lastRow.current_status = "YELLOW";
+    lastRow.current_status = "LOW";
     lastRow.last_classified_at = "2026-01-01T00:00:00.000Z";
     const db = new InMemoryD1Database(seeded);
     const env = { DB: db as never, TYPESAFE_AI_API_KEY: "test-key", SCHEDULER_TRIGGER_SECRET: undefined };
@@ -132,12 +132,12 @@ describe("runClassificationJob (scheduler)", () => {
     expect(result.regionCount).toBe(15);
     expect(result.skippedRegions).toEqual([lastRegion.code]);
     expect(db.classifications).toHaveLength(15);
-    expect(db.regions.find((r) => r.code === lastRegion.code)?.current_status).toBe("YELLOW");
+    expect(db.regions.find((r) => r.code === lastRegion.code)?.current_status).toBe("LOW");
   });
 
   it("marks the job run failed without touching regions when the writer itself throws", async () => {
     const answers: Record<string, unknown> = {};
-    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "GREEN" };
+    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "CALM" };
 
     vi.stubGlobal(
       "fetch",
@@ -145,7 +145,7 @@ describe("runClassificationJob (scheduler)", () => {
     );
 
     const seeded = seedAllRegions();
-    seeded[0]!.current_status = "GREEN";
+    seeded[0]!.current_status = "CALM";
     const db = new InMemoryD1Database(seeded);
     // Simulate a DB-level failure once classifications start being written.
     const originalPrepare = db.prepare.bind(db);
@@ -162,8 +162,8 @@ describe("runClassificationJob (scheduler)", () => {
     expect(db.jobRuns).toHaveLength(1);
     expect(db.jobRuns[0]?.status).toBe("failed");
     expect(db.jobRuns[0]?.error_message).toMatch(/simulated D1 outage/);
-    // The pre-existing GREEN status is left alone rather than forced to
+    // The pre-existing CALM status is left alone rather than forced to
     // UNKNOWN by one failed run.
-    expect(db.regions[0]?.current_status).toBe("GREEN");
+    expect(db.regions[0]?.current_status).toBe("CALM");
   });
 });

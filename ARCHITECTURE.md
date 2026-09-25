@@ -96,7 +96,7 @@ Domain code has zero framework dependencies, so it's unit-testable in
 plain Vitest and will not need to change when D1 rows start holding real
 classifications instead of demo ones.
 
-## Scheduled classification, and how UNKNOWN vs. GREEN is decided
+## Scheduled classification, and how UNKNOWN vs. CALM is decided
 
 `TypeSafeAiClassificationService` (`src/domain/typesafe-ai-classification-service.ts`)
 is the only implementation of the `ClassificationService` interface today,
@@ -104,8 +104,8 @@ and it is only ever called by `scheduler/src/index.ts` — never by the
 site's request path. Pages and API routes read `RegionRepository`
 directly, which returns whatever the scheduler last wrote to D1.
 
-The model is only ever offered three choices — GREEN, YELLOW, RED — and
-GREEN ("no elevated regional signal found") is the correct, expected
+The model is only ever offered four choices — CALM, LOW, ELEVATED,
+CRITICAL — and CALM ("nothing notable reported") is the correct, expected
 answer for most regions on most days: it means the evidence was checked
 and nothing concerning was found, not "we don't know." `UNKNOWN` is never
 one of the model's choices.
@@ -119,7 +119,7 @@ service raises `ClassificationUnavailableError`; the scheduler records a
 region whose individual answer is missing or unrecognized is likewise
 omitted from the result and left untouched. This is deliberate: on
 2026-09-21T07:00Z a single upstream HTTP 503 overwrote a healthy
-14×GREEN/2×YELLOW map with 16×UNKNOWN, which is exactly the failure mode
+14×CALM/2×LOW map with 16×UNKNOWN, which is exactly the failure mode
 this design prevents.
 
 Statuses **do not expire**. A classification stands until a later run
@@ -131,7 +131,7 @@ where a region that has never been classified (`last_classified_at IS
 NULL`) resolves to `UNKNOWN` regardless of the colour stored next to it.
 The invariant
 this app is built around ("missing or untrustworthy data must never
-resolve to GREEN") lives at that boundary, not in the model's own
+resolve to CALM") lives at that boundary, not in the model's own
 judgment calls.
 
 ## Why a region has its colour

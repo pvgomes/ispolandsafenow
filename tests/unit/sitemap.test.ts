@@ -46,7 +46,7 @@ describe("buildSitemapEntries", () => {
 
   it("derives lastmod from real content timestamps only", () => {
     const regions: RegionWithStatus[] = [
-      { code: "02", slug: "dolnoslaskie", namePl: "a", nameEn: "b", currentStatus: "GREEN", lastClassifiedAt: "2026-09-19T10:00:00.000Z", statusReason: null, statusDriver: null },
+      { code: "02", slug: "dolnoslaskie", namePl: "a", nameEn: "b", currentStatus: "CALM", lastClassifiedAt: "2026-09-19T10:00:00.000Z", statusReason: null, statusDriver: null },
       { code: "04", slug: "kujawsko-pomorskie", namePl: "a", nameEn: "b", currentStatus: "UNKNOWN", lastClassifiedAt: null, statusReason: null, statusDriver: null },
     ];
     const latestNews = { url: "https://n.pl/1", title: "t", titleEn: null, sourceName: null, publishedAt: "2026-09-19T11:30:00.000Z" };

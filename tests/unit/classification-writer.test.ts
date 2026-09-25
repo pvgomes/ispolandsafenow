@@ -25,7 +25,7 @@ describe("ClassificationWriter", () => {
 
     const classification: RegionClassification = {
       regionCode: "PL-14",
-      status: "YELLOW",
+      status: "LOW",
       confidence: 0.7,
       rationale: "test rationale",
       driver: "BORDER_PRESSURE",
@@ -45,13 +45,13 @@ describe("ClassificationWriter", () => {
     await writer.writeClassification(classification, jobRunId);
 
     expect(db.classifications).toHaveLength(1);
-    expect(db.classifications[0]?.status).toBe("YELLOW");
+    expect(db.classifications[0]?.status).toBe("LOW");
     expect(db.evidence).toHaveLength(1);
     expect(db.evidence[0]?.source_url).toBe("https://example.com/a");
     expect(db.evidence[0]?.classification_id).toBe(db.classifications[0]?.id);
 
     const region = db.regions.find((r) => r.code === "PL-14");
-    expect(region?.current_status).toBe("YELLOW");
+    expect(region?.current_status).toBe("LOW");
     expect(region?.last_classified_at).toBe("2026-01-01T00:00:00.000Z");
     expect(region?.status_reason).toBe("test rationale");
     expect(region?.status_driver).toBe("BORDER_PRESSURE");
@@ -66,7 +66,7 @@ describe("ClassificationWriter", () => {
       await writer.writeClassification(
         {
           regionCode: code,
-          status: "GREEN",
+          status: "CALM",
           confidence: null,
           rationale: null,
           driver: null,

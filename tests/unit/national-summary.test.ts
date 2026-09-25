@@ -22,19 +22,19 @@ describe("summarizeNational", () => {
     expect(summary.totalRegions).toBe(0);
   });
 
-  it("picks RED as the headline whenever any region is RED", () => {
-    const summary = summarizeNational([region("GREEN"), region("YELLOW"), region("RED"), region("UNKNOWN")]);
-    expect(summary.headlineLevel).toBe("RED");
-    expect(summary.counts).toEqual({ GREEN: 1, YELLOW: 1, RED: 1, UNKNOWN: 1 });
+  it("picks ELEVATED as the headline whenever any region is ELEVATED", () => {
+    const summary = summarizeNational([region("CALM"), region("LOW"), region("ELEVATED"), region("UNKNOWN")]);
+    expect(summary.headlineLevel).toBe("ELEVATED");
+    expect(summary.counts).toEqual({ CALM: 1, LOW: 1, ELEVATED: 1, CRITICAL: 0, UNKNOWN: 1 });
   });
 
-  it("picks YELLOW over UNKNOWN and GREEN when no RED is present", () => {
-    const summary = summarizeNational([region("GREEN"), region("UNKNOWN"), region("YELLOW")]);
-    expect(summary.headlineLevel).toBe("YELLOW");
+  it("picks LOW over UNKNOWN and CALM when no ELEVATED is present", () => {
+    const summary = summarizeNational([region("CALM"), region("UNKNOWN"), region("LOW")]);
+    expect(summary.headlineLevel).toBe("LOW");
   });
 
-  it("treats UNKNOWN as more cautionary than GREEN", () => {
-    const summary = summarizeNational([region("GREEN"), region("UNKNOWN")]);
+  it("treats UNKNOWN as more cautionary than CALM", () => {
+    const summary = summarizeNational([region("CALM"), region("UNKNOWN")]);
     expect(summary.headlineLevel).toBe("UNKNOWN");
   });
 });

@@ -52,10 +52,16 @@ function buildStatePrompt(asOf: string, news: readonly NewsItem[]): string {
     `You are assessing the current regional security-alert exposure across Poland's 16 voivodeships, as of ${asOf}. ` +
     `Below are recent headlines collected from public news portals (mainly Polish, plus some international ` +
     `coverage), covering roughly the last 48 hours:\n\n${newsBlock}\n\n` +
-    `Treat these headlines as your primary evidence. Default to GREEN (no elevated regional signal found) for any ` +
-    `region with no relevant headline above and no other strong, current signal — do not invent incidents the ` +
-    `headlines don't mention. Only choose YELLOW or RED when the evidence actually supports an elevated situation ` +
-    `or a confirmed incident for that specific region.\n\n` +
+    `Treat these headlines as your primary evidence. Default to CALM for any region with no relevant headline ` +
+    `above and no other strong, current signal — do not invent incidents the headlines don't mention.\n\n` +
+    `Be conservative and proportionate: this site is read by ordinary residents and travellers, and an ` +
+    `overstated level is a real harm, not a safe error. Routine reporting — NATO exercises, political ` +
+    `statements, general war coverage, a distant incident elsewhere in Poland — is CALM or at most LOW for a ` +
+    `given region. Reserve ELEVATED for a concrete, current situation actually affecting that region. ` +
+    `CRITICAL means one thing only: something physically struck the ground in that region — a missile, drone, ` +
+    `aircraft, explosion or falling debris that caused damage, casualties or wreckage there. Threats, ` +
+    `overflights, airspace violations with no impact, intercepted or shot-down objects with no damage, ` +
+    `sabotage suspicions and warnings are never CRITICAL, no matter how prominent the headline.\n\n` +
     `For each region you are asked twice: once for the alert level, and once for the single main reason behind ` +
     `that level. The reason must be consistent with the level you chose and with the headlines above — visitors ` +
     `are shown it as the explanation for the colour on the map.`
@@ -83,14 +89,15 @@ function buildQuestions(regions: readonly RegionIdentity[]) {
       type: "choice",
       instructions: `Based on the headlines above, what is the current security-alert level for the ${region.nameEn} voivodeship (Polish: ${region.namePl}), Poland?`,
       criteria: {
-        GREEN: "No elevated regional signal found in the evidence — the default when nothing relevant was reported.",
-        YELLOW: "An elevated situation requiring attention, supported by the evidence.",
-        RED: "A serious active warning or confirmed incident, supported by the evidence.",
+        CALM: "Nothing notable was reported for this region — the default, and the expected answer for most regions on most days.",
+        LOW: "Only minor or indirect signals concern this region: routine military exercises, political or diplomatic news, general war-in-Ukraine coverage, or an incident far away in another part of Poland. Nothing that changes what a resident or visitor should do.",
+        ELEVATED: "A concrete, current situation is actually affecting this region — for example an airspace violation, a closed airport, a sabotage investigation, or a serious official warning. Use this even for serious situations, as long as nothing has physically struck the ground here.",
+        CRITICAL: "Only when the evidence confirms a physical impact on the ground in this region: a missile, drone, aircraft, explosion or falling debris that caused damage, casualties or wreckage here. Threats, overflights, interceptions without damage and warnings do not qualify.",
       },
     };
     questions[`${region.code}${DRIVER_QUESTION_SUFFIX}`] = {
       type: "choice",
-      instructions: `What is the single main reason for that level in the ${region.nameEn} voivodeship (Polish: ${region.namePl})? Pick NOTHING_NOTABLE whenever the level is GREEN and no headline above concerns this region.`,
+      instructions: `What is the single main reason for that level in the ${region.nameEn} voivodeship (Polish: ${region.namePl})? Pick NOTHING_NOTABLE whenever the level is CALM and no headline above concerns this region.`,
       criteria: driverCriteria(),
     };
   }
@@ -127,8 +134,8 @@ function toEvidence(news: readonly NewsItem[]): ClassificationEvidence[] {
  * visitor — so the site itself only ever reads the persisted result from
  * D1 (see `RegionRepository`); it never calls this service directly.
  *
- * The model is only ever offered GREEN/YELLOW/RED — that is its
- * *assessment* of the evidence, and GREEN is the correct, safe answer
+ * The model is only ever offered CALM/LOW/ELEVATED/CRITICAL — that is
+ * its *assessment* of the evidence, and CALM is the correct, safe answer
  * when there is genuinely nothing to report, never "we don't know."
  *
  * This service never returns UNKNOWN. A pipeline failure (missing API
@@ -139,7 +146,7 @@ function toEvidence(news: readonly NewsItem[]): ClassificationEvidence[] {
  * way the caller writes nothing for the affected regions, so their last
  * good status simply stands until a later run replaces it (see
  * `resolveEffectiveStatus`). Missing or untrustworthy data still never
- * resolves to GREEN — it just no longer destroys the previous assessment
+ * resolves to CALM — it just no longer destroys the previous assessment
  * the moment upstream hiccups.
  */
 export class TypeSafeAiClassificationService implements ClassificationService {

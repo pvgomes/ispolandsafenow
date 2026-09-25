@@ -4,8 +4,8 @@ import type { NationalSummary } from "../../src/domain/national-summary";
 
 function summary(overrides: Partial<NationalSummary> = {}): NationalSummary {
   return {
-    headlineLevel: "GREEN",
-    counts: { GREEN: 16, YELLOW: 0, RED: 0, UNKNOWN: 0 },
+    headlineLevel: "CALM",
+    counts: { CALM: 16, LOW: 0, ELEVATED: 0, CRITICAL: 0, UNKNOWN: 0 },
     totalRegions: 16,
     ...overrides,
   };
@@ -29,7 +29,7 @@ describe("buildNationalFaq", () => {
 
   it("reports the real counts when regions are elevated", () => {
     const answer = buildNationalFaq(
-      summary({ headlineLevel: "YELLOW", counts: { GREEN: 13, YELLOW: 3, RED: 0, UNKNOWN: 0 } }),
+      summary({ headlineLevel: "LOW", counts: { CALM: 13, LOW: 3, ELEVATED: 0, CRITICAL: 0, UNKNOWN: 0 } }),
       UPDATED,
     )[0]!.answer;
     expect(answer).toContain("3 of Poland's 16 voivodeships");
@@ -37,7 +37,7 @@ describe("buildNationalFaq", () => {
 
   it("never claims Poland is clear when there is no data", () => {
     const answer = buildNationalFaq(
-      summary({ headlineLevel: "UNKNOWN", counts: { GREEN: 0, YELLOW: 0, RED: 0, UNKNOWN: 0 }, totalRegions: 0 }),
+      summary({ headlineLevel: "UNKNOWN", counts: { CALM: 0, LOW: 0, ELEVATED: 0, CRITICAL: 0, UNKNOWN: 0 }, totalRegions: 0 }),
       UPDATED,
     )[0]!.answer;
     expect(answer).toContain("not enough verified information");
@@ -52,7 +52,7 @@ describe("buildRegionFaq", () => {
   const region = {
     namePl: "Mazowieckie",
     englishName: "Masovia",
-    currentStatus: "GREEN" as const,
+    currentStatus: "CALM" as const,
     statusReason: "No recent reporting names this region.",
     capitalName: "Warsaw",
     cityNames: ["Warsaw", "Radom"],
@@ -73,7 +73,7 @@ describe("buildRegionFaq", () => {
 
   it("falls back to the level description when no reason was recorded", () => {
     const answer = buildRegionFaq({ ...region, statusReason: null })[0]!.answer;
-    expect(answer).toContain("No elevated regional signal found.");
+    expect(answer).toContain("Nothing notable reported");
   });
 
   it("drops the bracketed English name when the region has none", () => {

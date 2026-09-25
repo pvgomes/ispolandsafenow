@@ -89,6 +89,6 @@ run without waiting for the top of the hour.
   16 regions (see `src/domain/news-collection.ts`'s doc comment) — not
   regional-outlet-specific or scored per region — and lives in a GitHub
   Actions cron, so a run with an empty/stale `news_items` table
-  classifies on little or no evidence (the prompt defaults to GREEN).
+  classifies on little or no evidence (the prompt defaults to CALM).
 - No retry/backoff beyond "the next hourly run tries again."
 - No alerting on repeated `job_runs` failures.

@@ -4,7 +4,7 @@ import { englishAlias, resolveEffectiveStatus } from "../../src/domain/region";
 describe("resolveEffectiveStatus", () => {
   it("resolves to UNKNOWN when never classified", () => {
     const status = resolveEffectiveStatus({
-      currentStatus: "GREEN",
+      currentStatus: "CALM",
       lastClassifiedAt: null,
       statusReason: null,
       statusDriver: null,
@@ -14,22 +14,22 @@ describe("resolveEffectiveStatus", () => {
 
   it("keeps an old classification, because statuses do not expire", () => {
     const status = resolveEffectiveStatus({
-      currentStatus: "RED",
+      currentStatus: "ELEVATED",
       lastClassifiedAt: "2020-01-01T00:00:00.000Z",
       statusReason: "Drone, missile or airspace activity was reported in or near this region.",
       statusDriver: "AIRSPACE_INCIDENT",
     });
-    expect(status).toBe("RED");
+    expect(status).toBe("ELEVATED");
   });
 
   it("returns the stored status once classified", () => {
     const status = resolveEffectiveStatus({
-      currentStatus: "YELLOW",
+      currentStatus: "LOW",
       lastClassifiedAt: "2020-01-01T00:00:00.000Z",
       statusReason: null,
       statusDriver: null,
     });
-    expect(status).toBe("YELLOW");
+    expect(status).toBe("LOW");
   });
 });
 

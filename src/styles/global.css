@@ -3,23 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-status-green-100: #dcfce7;
-  --color-status-green-300: #86efac;
-  --color-status-green-500: #22c55e;
-  --color-status-green-700: #15803d;
-  --color-status-green-800: #166534;
+  /* CALM — deep, settled green: the normal state of almost every region. */
+  --color-status-calm-100: #d1fae5;
+  --color-status-calm-300: #6ee7b7;
+  --color-status-calm-500: #15803d;
+  --color-status-calm-700: #065f46;
+  --color-status-calm-800: #064e3b;
 
-  --color-status-yellow-100: #fef9c3;
-  --color-status-yellow-300: #fde047;
-  --color-status-yellow-500: #eab308;
-  --color-status-yellow-700: #a16207;
-  --color-status-yellow-800: #854d0e;
+  /* LOW — ordinary green: background noise, still reassuring. */
+  --color-status-low-100: #dcfce7;
+  --color-status-low-300: #86efac;
+  --color-status-low-500: #22c55e;
+  --color-status-low-700: #15803d;
+  --color-status-low-800: #166534;
 
-  --color-status-red-100: #fee2e2;
-  --color-status-red-300: #fca5a5;
-  --color-status-red-500: #ef4444;
-  --color-status-red-700: #b91c1c;
-  --color-status-red-800: #991b1b;
+  /* ELEVATED — yellow: worth attention, the ceiling short of an attack. */
+  --color-status-elevated-100: #fef9c3;
+  --color-status-elevated-300: #fde047;
+  --color-status-elevated-500: #eab308;
+  --color-status-elevated-700: #a16207;
+  --color-status-elevated-800: #854d0e;
+
+  /* CRITICAL — red, and only for a confirmed impact on the ground. */
+  --color-status-critical-100: #fee2e2;
+  --color-status-critical-300: #fca5a5;
+  --color-status-critical-500: #ef4444;
+  --color-status-critical-700: #b91c1c;
+  --color-status-critical-800: #991b1b;
 
   --color-status-unknown-100: #f1f5f9;
   --color-status-unknown-300: #cbd5e1;

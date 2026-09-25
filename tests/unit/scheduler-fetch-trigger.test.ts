@@ -68,7 +68,7 @@ describe("scheduler fetch handler (POST /trigger)", () => {
 
   it("runs the classification job and returns a summary when the secret matches", async () => {
     const answers: Record<string, unknown> = {};
-    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "GREEN" };
+    for (const r of REGIONS) answers[r.code] = { type: "choice", choice: "CALM" };
 
     vi.stubGlobal(
       "fetch",
@@ -85,7 +85,7 @@ describe("scheduler fetch handler (POST /trigger)", () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toMatchObject({ status: "succeeded", regionCount: 16, counts: { GREEN: 16 } });
+    expect(body).toMatchObject({ status: "succeeded", regionCount: 16, counts: { CALM: 16 } });
     expect(db.jobRuns).toHaveLength(1);
   });
 });

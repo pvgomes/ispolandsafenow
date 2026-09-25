@@ -1,5 +1,5 @@
 ---
-import { ALERT_LEVEL_PRESENTATION } from "../domain/alert-level";
+import { ALERT_LEVELS, ALERT_LEVEL_PRESENTATION } from "../domain/alert-level";
 import type { NationalSummary } from "../domain/national-summary";
 
 export interface Props {
@@ -30,23 +30,17 @@ const lastUpdatedDisplay = new Date(lastUpdated).toLocaleString("en-GB", {
   </div>
   <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{presentation.description}</p>
 
-  <dl class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-600 sm:grid-cols-4 dark:text-slate-300">
-    <div>
-      <dt class="font-medium text-status-green-700">Green</dt>
-      <dd>{summary.counts.GREEN} regions</dd>
-    </div>
-    <div>
-      <dt class="font-medium text-status-yellow-700">Yellow</dt>
-      <dd>{summary.counts.YELLOW} regions</dd>
-    </div>
-    <div>
-      <dt class="font-medium text-status-red-700">Red</dt>
-      <dd>{summary.counts.RED} regions</dd>
-    </div>
-    <div>
-      <dt class="font-medium text-status-unknown-700">Unknown</dt>
-      <dd>{summary.counts.UNKNOWN} regions</dd>
-    </div>
+  <dl class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-600 sm:grid-cols-5 dark:text-slate-300">
+    {
+      ALERT_LEVELS.map((level) => (
+        <div>
+          <dt class={`font-medium ${ALERT_LEVEL_PRESENTATION[level].colorClass}`}>
+            {ALERT_LEVEL_PRESENTATION[level].label}
+          </dt>
+          <dd>{summary.counts[level]} regions</dd>
+        </div>
+      ))
+    }
   </dl>
 
   <p class="mt-4 text-xs text-slate-400 dark:text-slate-500" data-testid="last-updated">

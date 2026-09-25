@@ -4,7 +4,7 @@ import { buildStatusReason, toStatusDriver, STATUS_DRIVERS } from "../../src/dom
 describe("buildStatusReason", () => {
   it("combines the driver phrase with the headline count", () => {
     const reason = buildStatusReason({
-      status: "RED",
+      status: "ELEVATED",
       driver: "AIRSPACE_INCIDENT",
       regionName: "Mazowieckie",
       matchedHeadlineCount: 3,
@@ -14,7 +14,7 @@ describe("buildStatusReason", () => {
 
   it("uses the singular form for a single matched headline", () => {
     const reason = buildStatusReason({
-      status: "YELLOW",
+      status: "LOW",
       driver: "BORDER_PRESSURE",
       regionName: "Podlaskie",
       matchedHeadlineCount: 1,
@@ -25,7 +25,7 @@ describe("buildStatusReason", () => {
 
   it("says so explicitly when no headline named the region", () => {
     const reason = buildStatusReason({
-      status: "GREEN",
+      status: "CALM",
       driver: "NOTHING_NOTABLE",
       regionName: "Opolskie",
       matchedHeadlineCount: 0,
@@ -35,7 +35,7 @@ describe("buildStatusReason", () => {
 
   it("falls back to the evidence sentence alone when the classifier gave no driver", () => {
     const reason = buildStatusReason({
-      status: "YELLOW",
+      status: "LOW",
       driver: null,
       regionName: "Lubelskie",
       matchedHeadlineCount: 2,

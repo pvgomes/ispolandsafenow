@@ -9,6 +9,6 @@ describe("GET /api/status logic", () => {
     expect(payload.mode).toBe("live");
     expect(payload.totalRegions).toBe(16);
     expect(payload.nationalStatus).toBe("UNKNOWN");
-    expect(payload.regionCounts).toEqual({ GREEN: 0, YELLOW: 0, RED: 0, UNKNOWN: 16 });
+    expect(payload.regionCounts).toEqual({ CALM: 0, LOW: 0, ELEVATED: 0, CRITICAL: 0, UNKNOWN: 16 });
   });
 });

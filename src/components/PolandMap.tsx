@@ -30,9 +30,10 @@ export interface PolandMapProps {
 }
 
 const FILL_BY_STATUS: Record<AlertLevel, string> = {
-  GREEN: "fill-status-green-500",
-  YELLOW: "fill-status-yellow-500",
-  RED: "fill-status-red-500",
+  CALM: "fill-status-calm-500",
+  LOW: "fill-status-low-500",
+  ELEVATED: "fill-status-elevated-500",
+  CRITICAL: "fill-status-critical-500",
   UNKNOWN: "fill-status-unknown-300",
 };
 

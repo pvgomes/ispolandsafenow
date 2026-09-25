@@ -8,21 +8,41 @@ visitor-facing summary.
 ## Status levels
 
 ```ts
-type AlertLevel = "GREEN" | "YELLOW" | "RED" | "UNKNOWN";
+type AlertLevel = "CALM" | "LOW" | "ELEVATED" | "CRITICAL" | "UNKNOWN";
 ```
 
-- **GREEN** — no elevated regional signal found. This is the expected,
+The scale is deliberately weighted towards the calm end. Most of Poland,
+most of the time, is simply going about its day, and a map that turns red
+at a routine drone report is both inaccurate and needlessly frightening —
+so the levels are:
+
+- **CALM** (dark green) — nothing notable reported. This is the expected,
   normal answer for most regions most of the time: it means the evidence
   was checked and nothing concerning was found, not "we don't know."
-- **YELLOW** — elevated situation requiring attention, supported by
-  collected evidence.
-- **RED** — serious active warning or confirmed incident, supported by
-  collected evidence.
+- **LOW** (green) — minor or indirect signals only: routine exercises,
+  political or diplomatic news, general war coverage, or an incident far
+  away in another part of Poland. Nothing that changes what a resident or
+  visitor should do.
+- **ELEVATED** (yellow) — a concrete, current situation actually
+  affecting this region: an airspace violation, a closed airport, a
+  sabotage investigation, a serious official warning. This is the ceiling
+  for everything short of an attack.
+- **CRITICAL** (red) — reserved for a confirmed physical impact on the
+  ground in that region: a missile, drone, aircraft, explosion or falling
+  debris that caused damage, casualties or wreckage there. Threats,
+  overflights, interceptions without damage and warnings never qualify.
 - **UNKNOWN** — the pipeline itself failed or the data is stale, not a
   possible outcome of a successful classification. See below.
 
+Before 2026-09-25 the scale had three steps (GREEN / YELLOW / RED) and
+red meant "serious active warning", which in practice fired on events
+with no impact on the ground. Migration `0006_rescale_alert_levels.sql`
+shifted every stored value one step down the alarm axis (GREEN→CALM,
+YELLOW→LOW, RED→ELEVATED), and `toAlertLevel` still accepts the old names
+so historical rows read correctly.
+
 **Invariant enforced in code, not just convention:** missing or
-untrustworthy data always resolves to `UNKNOWN`, never `GREEN`. This is
+untrustworthy data always resolves to `UNKNOWN`, never `CALM`. This is
 enforced at two specific boundaries rather than left to the model's
 judgment:
 
@@ -31,7 +51,8 @@ judgment:
    `TYPESAFE_AI_API_KEY` configured, the request to TypeSafe AI failing,
    a non-2xx response after retries, unparseable JSON, or no usable
    answer for any region. The model itself is only ever offered
-   GREEN/YELLOW/RED as choices — `UNKNOWN` is not something it can pick.
+   CALM/LOW/ELEVATED/CRITICAL as choices — `UNKNOWN` is not something it
+   can pick.
    A failed run does **not** publish `UNKNOWN`: it raises
    `ClassificationUnavailableError`, is recorded as a `failed` job run,
    and every stored status is left untouched, so a momentary upstream
@@ -68,10 +89,12 @@ the site itself never calls TypeSafe AI. A separate scheduled Worker
 2. Sends those headlines to TypeSafe AI's System One API
    (`POST https://api.typesafe.ai/v1/systemone`, model `jev-latest`) as
    the prompt's evidence, asking one "choice" question per region,
-   offering only GREEN / YELLOW / RED, plus a second "choice" question per
-   region (`<code>:driver`) for the main driver behind that level. The
-   model is instructed to default to GREEN — not invent an incident —
-   when a region has no relevant headline.
+   offering only CALM / LOW / ELEVATED / CRITICAL, plus a second "choice"
+   question per region (`<code>:driver`) for the main driver behind that
+   level. The model is instructed to default to CALM — not invent an
+   incident — when a region has no relevant headline, to treat routine
+   reporting as CALM or LOW, and to pick CRITICAL only for a confirmed
+   impact on the ground.
 3. Turns that driver into a one-sentence reason
    (`src/domain/status-reason.ts`) and matches the collected headlines to
    each region by name, colloquial name and major city

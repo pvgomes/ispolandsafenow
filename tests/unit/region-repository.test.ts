@@ -28,7 +28,7 @@ describe("RegionRepository", () => {
 
   it("reads the stored reason and driver behind a region's colour", async () => {
     const rows = buildSeededRows();
-    rows[0]!.current_status = "YELLOW";
+    rows[0]!.current_status = "LOW";
     rows[0]!.last_classified_at = "2026-01-01T00:00:00.000Z";
     rows[0]!.status_reason = "Incidents or pressure at the border were reported. Based on 2 recent headlines mentioning Dolnośląskie.";
     rows[0]!.status_driver = "BORDER_PRESSURE";
@@ -62,7 +62,7 @@ describe("RegionRepository", () => {
 
   it("resolves a never-classified region to UNKNOWN rather than trusting its stored colour", async () => {
     const rows = buildSeededRows();
-    rows[0]!.current_status = "RED";
+    rows[0]!.current_status = "ELEVATED";
     rows[0]!.last_classified_at = null;
     const repo = new RegionRepository(new FakeD1Database(rows) as never);
     const regions = await repo.listAll();
@@ -71,11 +71,11 @@ describe("RegionRepository", () => {
 
   it("keeps a classification as-is however old it is, because statuses no longer expire", async () => {
     const rows = buildSeededRows();
-    rows[0]!.current_status = "RED";
+    rows[0]!.current_status = "ELEVATED";
     rows[0]!.last_classified_at = "2020-01-01T00:00:00.000Z";
     const repo = new RegionRepository(new FakeD1Database(rows) as never);
     const regions = await repo.listAll();
-    expect(regions[0]?.currentStatus).toBe("RED");
+    expect(regions[0]?.currentStatus).toBe("ELEVATED");
   });
 });
 
@@ -100,7 +100,7 @@ describe("RegionRepository.listLatestEvidence", () => {
     await writer.writeClassification(
       {
         regionCode: "PL-14",
-        status: "YELLOW",
+        status: "LOW",
         confidence: null,
         rationale: "because",
         driver: "BORDER_PRESSURE",

@@ -9,7 +9,7 @@ const regions: RegionIdentity[] = [
 ];
 
 describe("applyClassifications", () => {
-  it("resolves a region with no matching classification to UNKNOWN, never GREEN", () => {
+  it("resolves a region with no matching classification to UNKNOWN, never CALM", () => {
     const result = applyClassifications(regions, []);
     const dolnoslaskie = result.find((r) => r.code === "PL-02");
     expect(dolnoslaskie?.currentStatus).toBe("UNKNOWN");
@@ -22,7 +22,7 @@ describe("applyClassifications", () => {
     const classifications: RegionClassification[] = [
       {
         regionCode: "PL-14",
-        status: "RED",
+        status: "ELEVATED",
         confidence: null,
         rationale: "test",
         classifiedAt: "2026-01-01T00:00:00.000Z",
@@ -32,7 +32,7 @@ describe("applyClassifications", () => {
     ];
     const result = applyClassifications(regions, classifications);
     const mazowieckie = result.find((r) => r.code === "PL-14");
-    expect(mazowieckie?.currentStatus).toBe("RED");
+    expect(mazowieckie?.currentStatus).toBe("ELEVATED");
     expect(mazowieckie?.lastClassifiedAt).toBe("2026-01-01T00:00:00.000Z");
     expect(mazowieckie?.statusDriver).toBe("AIRSPACE_INCIDENT");
   });

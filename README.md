@@ -21,7 +21,7 @@ translated once with Workers AI), plus a public status API and
 tests/documentation. The main site never calls TypeSafe AI itself — it
 only reads D1 — so traffic has no effect on AI cost. See
 `ARCHITECTURE.md` and `METHODOLOGY.md` for how classification and the
-GREEN/UNKNOWN split work, and `scheduler/README.md` for the job itself.
+CALM/UNKNOWN split work, and `scheduler/README.md` for the job itself.
 
 ## Stack
 

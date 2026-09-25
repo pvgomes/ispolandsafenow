@@ -48,7 +48,7 @@ export interface RegionWithStatus extends RegionIdentity, RegionStatus {}
 
 /**
  * A region that has never been classified resolves to UNKNOWN — missing
- * data must never resolve to GREEN.
+ * data must never resolve to CALM.
  *
  * Statuses deliberately do not expire: a classification stands until the
  * hourly job replaces it, so a run of failed or skipped runs leaves the

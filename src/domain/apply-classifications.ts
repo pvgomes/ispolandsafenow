@@ -7,7 +7,7 @@ import type { RegionIdentity, RegionWithStatus } from "./region";
  * `ClassificationService` implementation unchanged.
  *
  * A region with no matching classification resolves to UNKNOWN — missing
- * data must never resolve to GREEN.
+ * data must never resolve to CALM.
  */
 export function applyClassifications(
   regions: readonly RegionIdentity[],

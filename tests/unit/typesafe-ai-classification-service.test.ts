@@ -58,8 +58,8 @@ describe("TypeSafeAiClassificationService", () => {
           JSON.stringify({
             model: "jev-latest",
             answers: {
-              "PL-14": { type: "choice", choice: "YELLOW", confidence: 0.81 },
-              "PL-20": { type: "choice", choice: "RED", confidence: 0.9 },
+              "PL-14": { type: "choice", choice: "LOW", confidence: 0.81 },
+              "PL-20": { type: "choice", choice: "ELEVATED", confidence: 0.9 },
             },
             usage: { input_tokens: 10, output_tokens: 5 },
           }),
@@ -82,13 +82,13 @@ describe("TypeSafeAiClassificationService", () => {
     expect((typeSafeAiCall?.[1] as RequestInit & { headers: Record<string, string> }).headers.Authorization).toBe("Bearer test-key");
 
     const byCode = new Map(result.map((r) => [r.regionCode, r]));
-    expect(byCode.get("PL-14")?.status).toBe("YELLOW");
+    expect(byCode.get("PL-14")?.status).toBe("LOW");
     expect(byCode.get("PL-14")?.confidence).toBe(0.81);
     // Evidence is scoped to the region: Warsaw news belongs to Mazowieckie,
     // the Podlasie headline to Podlaskie.
     expect(byCode.get("PL-14")?.evidence.map((e) => e.sourceUrl)).toEqual(["https://example-news.pl/warszawa"]);
     expect(byCode.get("PL-20")?.evidence.map((e) => e.sourceUrl)).toEqual(["https://example-news.pl/incydent"]);
-    expect(byCode.get("PL-20")?.status).toBe("RED");
+    expect(byCode.get("PL-20")?.status).toBe("ELEVATED");
   });
 
   it("fails the run without retrying when the API responds with a non-retryable 4xx", async () => {
@@ -107,7 +107,7 @@ describe("TypeSafeAiClassificationService", () => {
     const fetchSpy = stubFetch(() => {
       call += 1;
       if (call === 1) return new Response("upstream unavailable", { status: 503 });
-      return new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "GREEN" } } }), {
+      return new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "CALM" } } }), {
         status: 200,
       });
     });
@@ -116,7 +116,7 @@ describe("TypeSafeAiClassificationService", () => {
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result[0]?.status).toBe("GREEN");
+    expect(result[0]?.status).toBe("CALM");
   });
 
   it("fails the run when a 503 persists across every attempt, so stored statuses are left untouched", async () => {
@@ -143,7 +143,7 @@ describe("TypeSafeAiClassificationService", () => {
   it("omits only the regions whose answer is missing, keeping the ones that were answered", async () => {
     stubFetch(
       () =>
-        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "YELLOW" } } }), {
+        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "LOW" } } }), {
           status: 200,
         }),
     );
@@ -153,7 +153,7 @@ describe("TypeSafeAiClassificationService", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]?.regionCode).toBe("PL-14");
-    expect(result[0]?.status).toBe("YELLOW");
+    expect(result[0]?.status).toBe("LOW");
   });
 
   it("omits a region whose answer is UNKNOWN or an unrecognized choice, never writing UNKNOWN over it", async () => {
@@ -178,10 +178,10 @@ describe("TypeSafeAiClassificationService", () => {
     );
   });
 
-  it("accepts GREEN as a normal, evidence-based classification (not a failure)", async () => {
+  it("accepts CALM as a normal, evidence-based classification (not a failure)", async () => {
     stubFetch(
       () =>
-        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "GREEN" } } }), {
+        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "CALM" } } }), {
           status: 200,
         }),
     );
@@ -189,14 +189,14 @@ describe("TypeSafeAiClassificationService", () => {
     const service = new TypeSafeAiClassificationService("test-key", NO_NEWS);
     const result = await service.classifyRegions({ regions: [REGION_A], asOf: "2026-09-18T00:00:00.000Z" });
 
-    expect(result[0]?.status).toBe("GREEN");
+    expect(result[0]?.status).toBe("CALM");
     expect(result[0]?.rationale).toBeTruthy();
   });
 
-  it("only offers GREEN/YELLOW/RED as AI-selectable criteria, not UNKNOWN", async () => {
+  it("only offers CALM/LOW/ELEVATED/CRITICAL as AI-selectable criteria, not UNKNOWN", async () => {
     const fetchSpy = stubFetch(
       () =>
-        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "GREEN" } } }), {
+        new Response(JSON.stringify({ model: "jev-latest", answers: { "PL-14": { type: "choice", choice: "CALM" } } }), {
           status: 200,
         }),
     );
@@ -207,6 +207,6 @@ describe("TypeSafeAiClassificationService", () => {
     const typeSafeAiCall = fetchSpy.mock.calls.find((call) => call[0] === "https://api.typesafe.ai/v1/systemone");
     const body = JSON.parse((typeSafeAiCall?.[1] as RequestInit).body as string);
     const criteria = body.questions["PL-14"].criteria;
-    expect(Object.keys(criteria).sort()).toEqual(["GREEN", "RED", "YELLOW"]);
+    expect(Object.keys(criteria).sort()).toEqual(["CALM", "CRITICAL", "ELEVATED", "LOW"]);
   });
 });

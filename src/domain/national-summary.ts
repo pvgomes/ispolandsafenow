@@ -8,17 +8,18 @@ export interface NationalSummary {
   readonly totalRegions: number;
 }
 
-// RED is most severe; UNKNOWN is treated as more cautionary than GREEN.
+// CRITICAL is most severe; UNKNOWN is treated as more cautionary than CALM.
 const SEVERITY_RANK: Record<AlertLevel, number> = {
-  RED: 3,
-  YELLOW: 2,
+  CRITICAL: 4,
+  ELEVATED: 3,
+  LOW: 2,
   UNKNOWN: 1,
-  GREEN: 0,
+  CALM: 0,
 };
 
 /** Deterministic national roll-up: no averaging, just the worst regional signal. */
 export function summarizeNational(regions: readonly RegionWithStatus[]): NationalSummary {
-  const counts: Record<AlertLevel, number> = { GREEN: 0, YELLOW: 0, RED: 0, UNKNOWN: 0 };
+  const counts: Record<AlertLevel, number> = { CALM: 0, LOW: 0, ELEVATED: 0, CRITICAL: 0, UNKNOWN: 0 };
   let headlineLevel: AlertLevel = "UNKNOWN";
   let headlineRank = -1;
 

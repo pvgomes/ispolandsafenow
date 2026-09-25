@@ -19,14 +19,17 @@ function nationalVerdict(summary: NationalSummary): string {
   if (totalRegions === 0 || headlineLevel === "UNKNOWN") {
     return "There is currently not enough verified information to summarize the situation across Poland, so no region is being reported as clear.";
   }
-  if (headlineLevel === "GREEN") {
-    return `No elevated security signal has been found in any of Poland's ${totalRegions} voivodeships in the latest update. Poland is not at war, and day-to-day life in cities such as Warsaw, Kraków and Gdańsk is running normally.`;
+  if (headlineLevel === "CALM") {
+    return `Nothing notable has been reported in any of Poland's ${totalRegions} voivodeships in the latest update. Poland is not at war, and day-to-day life in cities such as Warsaw, Kraków and Gdańsk is running normally.`;
   }
-  if (headlineLevel === "YELLOW") {
-    return `${counts.YELLOW} of Poland's ${totalRegions} voivodeships currently show an elevated situation worth paying attention to, and none is under a serious active warning. Poland is not at war, but it borders Ukraine, Belarus and Kaliningrad, so local disruption is possible.`;
+  if (headlineLevel === "LOW") {
+    return `${counts.LOW} of Poland's ${totalRegions} voivodeships show minor or indirect signals in the news, and nothing beyond that. Poland is not at war, and normal life — travel, work, tourism — is unaffected.`;
   }
-  return `${counts.RED} of Poland's ${totalRegions} voivodeships are currently under a serious active warning or a confirmed incident${
-    counts.YELLOW > 0 ? `, and ${counts.YELLOW} more show an elevated situation` : ""
+  if (headlineLevel === "ELEVATED") {
+    return `${counts.ELEVATED} of Poland's ${totalRegions} voivodeships currently show a situation worth paying attention to, and there is no confirmed attack on the ground anywhere in Poland. Poland is not at war, but it borders Ukraine, Belarus and Kaliningrad, so local disruption is possible.`;
+  }
+  return `${counts.CRITICAL} of Poland's ${totalRegions} voivodeships have had a confirmed impact on the ground — an attack, explosion or crash causing damage${
+    counts.ELEVATED > 0 ? `, and ${counts.ELEVATED} more show a situation worth paying attention to` : ""
   }. Check the affected regions before travelling and follow instructions from Polish authorities.`;
 }
 
